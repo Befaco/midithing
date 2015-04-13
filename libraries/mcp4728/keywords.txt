@@ -1,0 +1,40 @@
+#######################################
+# Syntax Coloring Map For HP RGB Shiled V2.0
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+mcp4728			KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+begin			KEYWORD2
+reset			KEYWORD2
+wake			KEYWORD2
+update			KEYWORD2
+analogWrite		KEYWORD2
+eepromWrite		KEYWORD2
+eepromReset		KEYWORD2
+setVref			KEYWORD2
+setGain			KEYWORD2
+setPowerDown		KEYWORD2
+getId			KEYWORD2
+getVref			KEYWORD2
+getGain			KEYWORD2
+getPowerDown		KEYWORD2
+getValue		KEYWORD2
+vdd			KEYWORD2
+getVout			KEYWORD2
+voutWrite		KEYWORD2
+#######################################
+# Instances (KEYWORD2)
+#######################################
+
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+
