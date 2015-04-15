@@ -25,43 +25,19 @@
 // -----------------------------------------------------------------------------
 //
 
-
-// Make conversion interpolating between points
-unsigned int MultiPointConv::intervalConvert( int inp)
-{
-	int val = inp - minInput; // Adjust learnt zero value
-	if( val < 0) val = 0;
-	if( val > 119) val = 119; // max 10 oct. = 120 notes
+//Class helper to blink led
+class Blinker{
+public:
+	byte status = 0;
+	unsigned long initblink=0;
+    unsigned long periodon, periodoff;
+	int countBlinks=0;
+	byte pinLED = 0;
 	
-	// Look for interval
-	int interv = val/6;
-	if( interv > 19) interv = 19;
-	int A = DACPoints[interv];   //low output interpolation point
-	int B = DACPoints[interv+1]; //high output interpolation point
+public:
+	Blinker(byte port) { pinLED = port;}
+        Blinker(){}
+	void setBlink( unsigned long periodon, unsigned long periodoff, int times);
+	void playBlink(void);
+};
 	
-	// get value
-	unsigned int outp = A+(val - interv*6)*(B-A)/6;
-	if( outp < 0) outp = 0; else if(outp >4095) outp = 4095;
-  return outp;
-}
-
-byte MultiPointConv::Processnote(byte channel, byte pitch, byte velocity)
-{
-	LearnInitTime = millis(); // Reset calibration counter
-	int val = pitch - minInput; // Adjust learnt zero value
-	if( val < 0) return 0;
-	if( val > 119) val = 119; // max 10 oct. = 120 notes
-
-	// Look for interval
-	int interv = val/6;
-	if( interv > 19) return 0;
-	
-	if( val== (interv+1)*6-1) //decrease
-		DACPoints[interv+1]--;
-	else if( val== interv*6+1) //increase
-		DACPoints[interv]++;
-	else return 0;
-
-	return 1;
-}
-

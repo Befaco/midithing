@@ -26,42 +26,35 @@
 //
 
 
-// Make conversion interpolating between points
-unsigned int MultiPointConv::intervalConvert( int inp)
-{
-	int val = inp - minInput; // Adjust learnt zero value
-	if( val < 0) val = 0;
-	if( val > 119) val = 119; // max 10 oct. = 120 notes
-	
-	// Look for interval
-	int interv = val/6;
-	if( interv > 19) interv = 19;
-	int A = DACPoints[interv];   //low output interpolation point
-	int B = DACPoints[interv+1]; //high output interpolation point
-	
-	// get value
-	unsigned int outp = A+(val - interv*6)*(B-A)/6;
-	if( outp < 0) outp = 0; else if(outp >4095) outp = 4095;
-  return outp;
-}
+// Utility class to convert MIDI to CV Range
+// Linear scale input to output (defined as minimun/range) 
+class RangeConv{
+ public:
+  byte DACnum = 0;
+  int minInput, rangeInput;
+  unsigned int minDAC, rangeDAC;
+  RangeConv(){
+    // Default to 12 bits in the CV for 127 MIDI values;
+    minInput=0; rangeInput=127; minDAC = 0; rangeDAC = 4095;
+  }
+  // Make conversion
+  unsigned int linealConvert( int inp){
+    return (minDAC+ ((long)(inp-minInput) * rangeDAC)/rangeInput);
+  }
+};
 
-byte MultiPointConv::Processnote(byte channel, byte pitch, byte velocity)
-{
-	LearnInitTime = millis(); // Reset calibration counter
-	int val = pitch - minInput; // Adjust learnt zero value
-	if( val < 0) return 0;
-	if( val > 119) val = 119; // max 10 oct. = 120 notes
-
-	// Look for interval
-	int interv = val/6;
-	if( interv > 19) return 0;
-	
-	if( val== (interv+1)*6-1) //decrease
-		DACPoints[interv+1]--;
-	else if( val== interv*6+1) //increase
-		DACPoints[interv]++;
-	else return 0;
-
-	return 1;
-}
+// Utility class to convert MIDI to CV Range
+// Multi-Linear scale input to output (defined as 20 fix points and output as interpolation between each pair of fix points) 
+class MultiPointConv:public RangeConv{
+ public:
+  int DACPoints[21];
+  MultiPointConv(){
+    // Default to 12 bits in the CV for 120 MIDI values;
+    minInput=0; rangeInput=120; minDAC = 0;rangeDAC = 4095;
+	for( int i=0; i<21; i++) DACPoints[i]= i*204.75; //4095/20;
+  }
+  // Make conversion
+  unsigned int intervalConvert( int inp);
+  byte Processnote(byte channel, byte pitch, byte velocity);
+};
 

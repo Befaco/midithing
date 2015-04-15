@@ -25,43 +25,61 @@
 // -----------------------------------------------------------------------------
 //
 
-
-// Make conversion interpolating between points
-unsigned int MultiPointConv::intervalConvert( int inp)
+// Time on, time off, number of times to blink
+// times = -1 continuous
+void Blinker::setBlink( unsigned long pon, unsigned long poff, int times)
 {
-	int val = inp - minInput; // Adjust learnt zero value
-	if( val < 0) val = 0;
-	if( val > 119) val = 119; // max 10 oct. = 120 notes
+	countBlinks = times;
+	// Turn off blinker
+	if( times == 0) {
+		if( pinLED>0) 
+			if(pinLED < 128) digitalWrite(pinLED,LOW);
+			else sendvaltoDAC(pinLED-128, 0);
+		status = LOW;
+		return;
+		}
 	
-	// Look for interval
-	int interv = val/6;
-	if( interv > 19) interv = 19;
-	int A = DACPoints[interv];   //low output interpolation point
-	int B = DACPoints[interv+1]; //high output interpolation point
-	
-	// get value
-	unsigned int outp = A+(val - interv*6)*(B-A)/6;
-	if( outp < 0) outp = 0; else if(outp >4095) outp = 4095;
-  return outp;
+	periodon = pon;
+	periodoff = poff;
+	initblink = millis();
+	status = HIGH;
+	if( pinLED>0) 
+		if(pinLED < 128) digitalWrite(pinLED,HIGH);
+		else sendvaltoDAC(pinLED-128, 4095);
 }
 
-byte MultiPointConv::Processnote(byte channel, byte pitch, byte velocity)
+
+// Cyclic run of blink
+void Blinker::playBlink(void)
 {
-	LearnInitTime = millis(); // Reset calibration counter
-	int val = pitch - minInput; // Adjust learnt zero value
-	if( val < 0) return 0;
-	if( val > 119) val = 119; // max 10 oct. = 120 notes
-
-	// Look for interval
-	int interv = val/6;
-	if( interv > 19) return 0;
+	// No blink
+	if( countBlinks == 0) return;
 	
-	if( val== (interv+1)*6-1) //decrease
-		DACPoints[interv+1]--;
-	else if( val== interv*6+1) //increase
-		DACPoints[interv]++;
-	else return 0;
-
-	return 1;
+	// Get current time
+	unsigned long current = millis();
+	// Check end of period on
+	if( status== HIGH){
+		if( current> initblink+periodon){
+			// End of period on
+			initblink = current;
+			status = LOW;
+			if( pinLED>0) 
+				if(pinLED < 128) digitalWrite(pinLED,LOW);
+				else sendvaltoDAC(pinLED-128, 0);
+			}
+        }
+	// Check end of period off
+	else if( current > initblink+periodoff){
+			// End of period off
+			initblink = current;
+			// Decrease counter
+			if( countBlinks > 0) countBlinks--;
+			// If not zero, init next cycle
+			if(countBlinks != 0){
+				status = HIGH;
+				if( pinLED>0) 
+					if(pinLED < 128) digitalWrite(pinLED,HIGH);
+					else sendvaltoDAC(pinLED-128, 4095);
+				}
+			}
 }
-

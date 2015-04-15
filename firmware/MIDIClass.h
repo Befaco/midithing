@@ -46,9 +46,6 @@ public:
 	void ProcessNoteOff(byte pitch, byte velocity);
 	void ProcessBend(int bend);
 	void ProcessModul(byte value);
-	#ifdef PRINTDEBUG  
-	void PrintNotes(void);
-	#endif
 	int CheckRepeat(byte pitch);
 	void playNote(byte note, byte plvelocity);
 	void playNoteOff(void);

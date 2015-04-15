@@ -32,19 +32,13 @@
 void HandleNoteOn(byte channel, byte pitch, byte velocity) {  
 int MIDIactive = -1;  
 
-  // velocity = 0 acts like a NoteOff.
-  if (velocity == 0) {
-    HandleNoteOff(channel, pitch, velocity);
-    return;
-  }
-  
   // If in learn mode, catch info
-  if( LearnMode == ENTERLEARN){
+  if( LearnMode == ENTERLEARN && velocity>0){
     ChanMIDI[LearnStep].LearnThis( channel, pitch, velocity);
     return;
   }
   // If in cal mode, adjust notes
-  if( LearnMode == ENTERCAL){ 
+  if( LearnMode == ENTERCAL && velocity>0){ 
 	if(channel<6) 
 		if( CalProcessNote(channel, pitch, velocity)) return; // do not play note if calibration key pressed
 	}
@@ -52,15 +46,24 @@ int MIDIactive = -1;
   // Check if received channel is any active MIDI
   MIDIactive= CheckActiveMIDI(channel,pitch);
   if( MIDIactive == -1){
+      #ifdef PRINTDEBUG   
+      Serial.println("Not active MIDI");
+      #endif
       return; // received channel not any active MIDI
       }
-  if(  MIDImode == PERCTRIG && channel == 10){
+  if(  MIDImode == PERCTRIG && channel == 10 && velocity >0){
 	// Play percussion
 	gates[MIDIactive].setBlink(TRIGPERCUSSION, 1, 1); // Play trigger
         blink.setBlink( 100, 1, 1); // Blink once every Note ON (not in CAL/LEARN mode)
         return;
 	}
 
+  if (velocity == 0) {
+    // This acts like a NoteOff.
+    HandleNoteOff(channel, pitch, velocity);
+    return;
+  }
+  
   if( LearnMode != ENTERCAL)
     blink.setBlink( 100, 1, 1); // Blink once every Note ON (not in CAL/LEARN mode)
   ChanMIDI[MIDIactive].ProcessNoteOn(pitch,velocity);
@@ -75,6 +78,9 @@ void HandleNoteOff(byte channel, byte pitch, byte velocity) {
   // Check if received channel is any active MIDI
   MIDIactive= CheckActiveMIDI(channel,pitch);
   if( MIDIactive == -1){
+      #ifdef PRINTDEBUG   
+      Serial.println("Not active MIDI");
+      #endif
       return; // received channel not any active MIDI
       }  
   // Do nothing in percussion mode
@@ -114,6 +120,9 @@ void HandleControlChange (byte channel, byte number, byte value){
 			ChanMIDI[i].playNoteOff(); // All notes off received
 			ChanMIDI[i].nNotesOn=0; // 0 notes on
 			}
+      #ifdef PRINTDEBUG
+      Serial.println("All Notes Off");
+      #endif      
     default: return;
   }
 }
@@ -126,19 +135,29 @@ void HandleStart (void){
   countCLOCK=0;
   gates[9].setBlink(TRIGSTART,1,1);
   //digitalWrite(PINSTARTSTOP, HIGH);
+  #ifdef PRINTDEBUG   
+  Serial.println("MIDI Start");
+  #endif
 }
 
 void HandleContinue (void){
   MIDIRun = 1;
   countCLOCK=0;
   gates[9].setBlink(TRIGSTART,1,1);
+//  digitalWrite(PINSTARTSTOP, HIGH);
+  #ifdef PRINTDEBUG   
+  Serial.println("MIDI Continue");
+  #endif
 }
 
 void HandleStop (void){
   MIDIRun = 0;
   countCLOCK=0;
+  //digitalWrite(PINSTARTSTOP, LOW);
+  #ifdef PRINTDEBUG   
+  Serial.println("MIDI Stop");
+  #endif
 }
-
 
 void HandleClock(void){
   //( !MIDIRun) return; // Only when MIDI run command received
@@ -149,6 +168,14 @@ void HandleClock(void){
 	// Send trigger to CLOCK port
 	gates[4].setBlink( TRIGCLOCK,1,1);
 	}
+  /*
+  digitalWrite( PINCLOCK, HIGH);
+  //digitalWrite( PINLED, HIGH);
+  delayMicroseconds(2000); // 2 milliseconds delay
+  digitalWrite( PINCLOCK, LOW);
+  //digitalWrite( PINLED, LOW);  
+  */
+
 }
 
 #endif  //STARTSTOPCONT

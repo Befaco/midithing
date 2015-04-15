@@ -45,6 +45,9 @@ void EnterLearnMode(void){
   
   // Init timer
   LearnInitTime = millis();
+  #ifdef PRINTDEBUG   
+  Serial.println("Init Learn Mode");
+  #endif	
 }
 
 
@@ -60,7 +63,11 @@ void DoLearnCycle(void){
 	blink.setBlink(0,0,0);	
 	// Store value in EEPROM
 	WriteMIDIeeprom();
-	}
+	
+    #ifdef PRINTDEBUG   
+    Serial.println("End Learn Mode");
+    #endif
+  }
 }
 
 //////////////////////////////
@@ -79,6 +86,9 @@ void EnterCalMode(void){
   
   // Init timer
   LearnInitTime = millis();
+  #ifdef PRINTDEBUG   
+  Serial.println("Init Cal Mode");
+  #endif	
 }
 
 // Cal Mode Cycle function
@@ -87,6 +97,12 @@ void DoCalCycle(void){
 
   // After 55 seconds without receiving a note, exit calibration
   if( current > LearnInitTime + 55000){
+	#ifdef PRINTDEBUG   
+	Serial.print(LearnInitTime);
+	Serial.print(" msec ");
+	Serial.println(current);
+	Serial.println("Time expired for Calibration");
+	#endif	
 	EndCalMode();
   }
 }
@@ -99,6 +115,9 @@ void EndCalMode(void)
     WriteMIDIeeprom();
 	// Turn off LED blink
 	blink.setBlink(0,0,0);
+    #ifdef PRINTDEBUG   
+    Serial.println("End Cal Mode");
+    #endif
 }
 
 
@@ -126,6 +145,10 @@ byte CalProcessNote(byte channel, byte pitch, byte velocity)
 			  SetModeMIDI(PERCTRIG);			
 			  return 1;
 			  break;
+			/*case 6:
+			  SetModeMIDI(PERCGATE);			
+			  break;
+                        */
 		}
 	return 0;
 }

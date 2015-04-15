@@ -29,6 +29,13 @@
 // Actions to perform for Note On
 void MIDICV::ProcessNoteOn(byte pitch, byte velocity){
 
+  #ifdef PRINTDEBUG
+  Serial.print(pitch);
+  Serial.print(" noteon / v ");
+  Serial.println(velocity);
+  PrintNotes();
+  #endif
+
   // Add a new note to the note on list
   // First check if already in the list (should not happen, but...)
   // If not repeated, increase pressed key counter and store it
@@ -38,6 +45,12 @@ void MIDICV::ProcessNoteOn(byte pitch, byte velocity){
     VelocOn[nNotesOn] = velocity;
     nNotesOn++;
   }
+  #ifdef PRINTDEBUG
+  Serial.print(repeat);
+  Serial.print(" rep / Notes On: ");
+  Serial.println(nNotesOn);
+  PrintNotes();
+  #endif  
   // If not repeated Play the note
   if( repeat==-1 && nNotesOn<16) playNote( pitch, velocity);
 }
@@ -45,17 +58,30 @@ void MIDICV::ProcessNoteOn(byte pitch, byte velocity){
 
 // Actions to perform for Note Off
 void MIDICV::ProcessNoteOff(byte pitch, byte velocity){
+  #ifdef PRINTDEBUG
+  Serial.print(pitch);
+  Serial.print(" noteoff / v ");
+  Serial.println(velocity);
+  PrintNotes();
+  #endif
   
   // First check if the note off is in the list
   int repeat;
   repeat = CheckRepeat(pitch);
   if( repeat == -1){ 
+      #ifdef PRINTDEBUG   
+      Serial.println("Note on for received note off not found");
+      #endif
       return; // Note on for received note off not found
       }  
   if( nNotesOn == 1){  
     // Last note, play note off
     nNotesOn = 0;
     playNote( pitch, 0);
+    #ifdef PRINTDEBUG  
+    Serial.print(" Last Note Off: ");
+    Serial.println(pitch);
+    #endif
   }
   else{
     // Remove note from the list and play the last active note
@@ -65,6 +91,12 @@ void MIDICV::ProcessNoteOff(byte pitch, byte velocity){
     }
     nNotesOn--; // Decrease # of active notes
     playNote( NotesOn[nNotesOn-1], VelocOn[nNotesOn-1]);
+    #ifdef PRINTDEBUG  
+    Serial.print(repeat);
+    Serial.print(" rep / Notes On: ");
+    Serial.println(nNotesOn);
+    PrintNotes();
+    #endif
   }
 }
 
@@ -78,6 +110,12 @@ void MIDICV::ProcessBend(int bend){
   voltage = BendDAC->linealConvert(bend);  
   if(voltage > 4095) voltage = 0;
 
+  #ifdef PRINTDEBUG
+  Serial.print("pitch bend: ");
+  Serial.print(bend);
+  Serial.print(" volt: ");
+  Serial.println(voltage);
+  #endif
   sendvaltoDAC( BendDAC->DACnum, voltage);
 }
 
@@ -90,9 +128,27 @@ void MIDICV::ProcessModul(byte value){
   voltage = ModulDAC->linealConvert(value);  
   if(voltage > 4095) voltage = 0;
 
+  #ifdef PRINTDEBUG
+  Serial.print("Modulation: ");
+  Serial.print(value);
+  Serial.print(" volt: ");
+  Serial.println(voltage);
+  #endif
   sendvaltoDAC( ModulDAC->DACnum, voltage);
 }
 
+#ifdef PRINTDEBUG  
+void MIDICV::PrintNotes(void)
+{
+  for(int i=0; i<nNotesOn;i++){
+    Serial.print(NotesOn[i]);
+    Serial.print("/");
+    Serial.print(VelocOn[i]);
+    Serial.print(" ");
+  }
+  Serial.println(" ");
+}
+#endif
 
 // Check if the note is in the list and return position
 int MIDICV::CheckRepeat(byte pitch){
@@ -146,8 +202,14 @@ void MIDICV::LearnThis( byte channel, byte pitch, byte velocity){
 	midiChannel = channel;
 	// Set new minimum pitch
 	PitchDAC->minInput = pitch;
-
-	LearnInitTime=millis();
+	#ifdef PRINTDEBUG   
+		Serial.print(channel);
+                Serial.print(" Channel. New min Input: ");
+		Serial.println(pitch);
+                Serial.print(LearnStep);
+	        Serial.println(" Step, End Learn Mode");
+	#endif
+        LearnInitTime=millis();
         nNotesOn=0;
 
 	// Go to next channel learn step.
@@ -216,6 +278,12 @@ int ReadMIDIeeprom(void){
   
   eeprom_read_block((void*)&numMIDI, (void*)0, sizeof(numMIDI));
   eeprom_read_block((void*)&modeMIDI, (void*)sizeof(int), sizeof(modeMIDI));
+  #ifdef PRINTDEBUG
+  Serial.print("Read EEPROM Num MIDI");
+  Serial.print(numMIDI);
+  Serial.print(" / Mode MIDI: ");
+  Serial.println(modeMIDI);
+  #endif
   if ( numMIDI<1 || numMIDI > 4) return -1;
   if ( modeMIDI<MONOMIDI || modeMIDI > PERCGATE) return -1;
   
@@ -233,6 +301,18 @@ int ReadMIDIeeprom(void){
                   
 		eeprom_read_block((void*)&TempMIDI, (void*)(sizeof(int)*2+sizeof(TempConv)+i*(sizeof(TempConv)+sizeof(TempMIDI))), sizeof(TempMIDI));
 		memcpy( &ChanMIDI[i], &TempMIDI, sizeof(ChanMIDI[i]));
+/*
+  #ifdef PRINTDEBUG
+  Serial.print("DACConv addr: ");
+  Serial.print((sizeof(int)*2+i*(sizeof(TempConv)+sizeof(TempMIDI))));
+  Serial.print(" /2: ");
+  Serial.println((sizeof(int)*2+sizeof(TempConv)+i*(sizeof(TempConv)+sizeof(TempMIDI))));
+  Serial.print("DACConv 1: ");
+  Serial.print(DACConv[i].DACPoints[1]);
+  Serial.print(" /2: ");
+  Serial.println(DACConv[i].DACPoints[2]);
+  #endif
+*/
 	}
   MAXNumMIDI = numMIDI;
   MIDImode = modeMIDI;
@@ -244,6 +324,13 @@ int ReadMIDIeeprom(void){
 void WriteMIDIeeprom(void){
   //return;
 	int i;
+  #ifdef PRINTDEBUG
+  Serial.println("Write MIDI");
+  Serial.print("Num MIDI: ");
+  Serial.print(MAXNumMIDI);
+  Serial.print(" / Mode MIDI: ");
+  Serial.println(MIDImode);
+  #endif
 
 	// Store in EEPROM number of channels and MIDI mode
 	eeprom_write_block((void*)&MAXNumMIDI, (void*)0, sizeof(MAXNumMIDI));
@@ -253,7 +340,20 @@ void WriteMIDIeeprom(void){
 		if(i==0) DACConv[i].rangeDAC = 4093;
 		eeprom_write_block((const void*)&DACConv[i], (void*)(sizeof(MAXNumMIDI)*2+i*(sizeof(DACConv[i])+sizeof(ChanMIDI[i]))), sizeof(DACConv[i]));
 		eeprom_write_block((const void*)&ChanMIDI[i], (void*)(sizeof(MAXNumMIDI)*2+sizeof(DACConv[i])+i*(sizeof(ChanMIDI[i])+sizeof(DACConv[i]))), sizeof(ChanMIDI[i]));
+/*
+  #ifdef PRINTDEBUG
+  Serial.print("DACConv addr: ");
+  Serial.print((sizeof(MAXNumMIDI)*2+i*(sizeof(DACConv[i])+sizeof(ChanMIDI[i]))));
+  Serial.print(" /2: ");
+  Serial.println((sizeof(MAXNumMIDI)*2+sizeof(DACConv[i])+i*(sizeof(ChanMIDI[i])+sizeof(DACConv[i]))));
+  Serial.print("DACConv 1: ");
+  Serial.print(DACConv[i].DACPoints[1]);
+  Serial.print(" /2: ");
+  Serial.println(DACConv[i].DACPoints[2]);
+  #endif
+*/
 		}
+
 }
 	
 // Set default MIDI properties manually
@@ -316,6 +416,10 @@ void SetModeMIDI(int mode)
 			  break;
 		default: return;
 		}
+   #ifdef PRINTDEBUG
+  Serial.print("New Mode: ");
+  Serial.println(mode);
+  #endif
        
 	WriteMIDIeeprom();
 }

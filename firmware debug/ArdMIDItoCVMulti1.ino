@@ -26,6 +26,9 @@
 //
 
 
+
+#define PRINTDEBUG 1// if defined, send debug info to the serial interface
+//#define USETIMER  // if defined, use timer functions
 #define CALIBRATION 1
 #define STARTSTOPCONT // if defined, handle start/stop/continue
 
@@ -193,9 +196,16 @@ void setup() {
   MIDI.setHandleStop(HandleStop);
 #endif
   MIDI.setHandleClock(HandleClock);
-    
+  
+  #ifdef PRINTDEBUG   
+  Serial.println("Init MIDItoCV...");
+  #endif	
+  
   // Read MIDI Channels from EEPROM and store
   if( ReadMIDIeeprom() ==-1){
+  #ifdef PRINTDEBUG
+  Serial.println("No EEPROM Read");
+  #endif
     // Set Mode manually
     //SetModeMIDI(MONOMIDI);
     //SetModeMIDI(DUALMIDI);
@@ -252,8 +262,17 @@ void loop() {
 //////////////////////////////////////////////
 // DAC function definition   
 // Send value val to DAC port 
-void  sendvaltoDAC(unsigned int port, unsigned int val){  
+void  sendvaltoDAC(unsigned int port, unsigned int val){
+  
   dac.analogWrite(port,val); // write to input register of a DAC. Channel 0-3, Value 0-4095
+  
+  
+  #ifdef PRINTDEBUG
+  Serial.print(port);
+  Serial.print(" DAC = ");
+  Serial.println(val);
+  #endif
+  
 }
 
 
