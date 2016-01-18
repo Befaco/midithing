@@ -8,10 +8,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -19,36 +19,49 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-// 
+//
 // See http://creativecommons.org/licenses/MIT/ for more information.
 //
 // -----------------------------------------------------------------------------
 //
 
-class MIDICV{
+#define MAXNOTES 8
+
+struct NoteEvent {
+public:
+  byte pitch;
+  byte velocity;
+};
+
+class MIDICV
+{
 //////////////////////////////////////////////
 //Variables
 public:
-	// Var MIDI
-	byte midiChannel=1; // Initial channel
-	byte NotesOn[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; // Stores notes on (16 max)
-	byte VelocOn[16]; // Stores velocities on (16 max)
-	byte nNotesOn=0; // Number of notes on
-	byte pinGATE=2;
-	// Var MIDI-DAC
-	class MultiPointConv *PitchDAC, *VelDAC, *BendDAC, *ModulDAC;
+  // Var MIDI
+  byte midiChannel = 1; // Initial channel
+  byte playingNotes[128] = {0}; // more efficient than iterating list
+  NoteEvent NotesOn[MAXNOTES];
+  byte nNotesOn = 0; // Number of notes on
+  byte pinGATE = 2;
+  // Var MIDI-DAC
+  class MultiPointConv *PitchDAC, *VelDAC, *BendDAC, *ModulDAC;
 
 //////////////////////////////////////////////
 // Function declaration
-	MIDICV(){
-		}
-	void ProcessNoteOn(byte pitch, byte velocity);
-	void ProcessNoteOff(byte pitch, byte velocity);
-	void ProcessBend(int bend);
-	void ProcessModul(byte value);
-	int CheckRepeat(byte pitch);
-	void playNote(byte note, byte plvelocity);
-	void playNoteOff(void);
-	void LearnThis( byte channel, byte pitch, byte velocity);
+  MIDICV()
+  {
+  }
+  void ProcessNoteOn(byte pitch, byte velocity);
+  void ProcessNoteOff(byte pitch, byte velocity);
+  void ProcessBend(int bend);
+  void ProcessModul(byte value);
+#ifdef PRINTDEBUG
+  void PrintNotes(void);
+#endif
+  byte CheckRepeat(byte pitch);
+  void playNote(byte note, byte plvelocity);
+  void playNoteOff(void);
+  void LearnThis(byte channel, byte pitch, byte velocity);
 
 };

@@ -8,10 +8,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-// 
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-// 
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -19,13 +19,16 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-// 
+//
 // See http://creativecommons.org/licenses/MIT/ for more information.
 //
 // -----------------------------------------------------------------------------
 //
 
 
+
+//#define PRINTDEBUG 1// if defined, send debug info to the serial interface
+//#define USETIMER  // if defined, use timer functions
 #define CALIBRATION 1
 #define STARTSTOPCONT // if defined, handle start/stop/continue
 
@@ -43,7 +46,7 @@
 // Input / output definitions
 // DAC Ports
 #define PITCHCV 0
-#define VELOC 1 
+#define VELOC 1
 #define MODUL 2
 #define BEND 3
 // In/Out pins
@@ -53,6 +56,7 @@
 #define PINGATE4 5
 #define PINCLOCK 6
 #define PINLEARN 7
+#define PINLED2 9
 #define PINSTARTSTOP 10
 #define PINLED 13
 
@@ -68,7 +72,7 @@
 #define PERCTRIG 5
 #define PERCGATE 6
 
-// 
+//
 #define TRIGPERCUSSION 100 // Width of trigger for percussions
 #define TRIGCLOCK 200 // Width of trigger for Clock
 #define TRIGSTART 200 // Width of trigger for Start/Continue
@@ -76,15 +80,15 @@
 //////////////////////////////////////////////
 // Function declaration
 // DAC
-void  sendvaltoDAC(unsigned int port, unsigned int val); 
+void  sendvaltoDAC(unsigned int port, unsigned int val);
 //MIDI Handles
 void HandleNoteOn(byte channel, byte pitch, byte velocity);
 void HandleNoteOff(byte channel, byte pitch, byte velocity);
-void HandlePitchBend (byte channel, int bend);
-void HandleControlChange (byte channel, byte number, byte value);
+void HandlePitchBend(byte channel, int bend);
+void HandleControlChange(byte channel, byte number, byte value);
 #ifdef STARTSTOPCONT
-void HandleStart (void);
-void HandleContinue (void);
+void HandleStart(void);
+void HandleContinue(void);
 void HandleStop(void);
 #endif
 void HandleClock(void);
@@ -113,65 +117,77 @@ void SetupTimer(unsigned int compTimer1);
 //////////////////////////////////////////////
 //Variables
 //MIDI
-MIDICV ChanMIDI[5]; // Define up to four MIDI channels
-int MAXNumMIDI=0; // Number of MIDI channels in use
-byte MIDIRun=0; // Set to 0 to init in stop condition
-int MIDImode=QUADMIDI; // MIDI mode Set to quad mode by default
+MIDICV ChanMIDI[4]; // Define up to four MIDI channels
+int MAXNumMIDI = 0; // Number of MIDI channels in use
+byte MIDIRun = 0; // Set to 0 to init in stop condition
+int MIDImode = QUADMIDI; // MIDI mode Set to quad mode by default
 Blinker gates[10]; // Gates triggers
-int countCLOCK= 1;
-int ppqnCLOCK= 24;
+int countCLOCK = 1;
+int ppqnCLOCK = 24;
 
 // Var I2C DAC
 mcp4728 dac = mcp4728(0); // instantiate mcp4728 object, Device ID = 0
-MultiPointConv DACConv[5];
+MultiPointConv DACConv[4];
 
 // Var Learn Mode
 byte LearnMode = NORMALMODE;
 unsigned long LearnInitTime;
-byte LearnStep =0;
+byte LearnStep = 0;
 
 // Var Blinker
 Blinker blink((byte)PINLED);
 
 // Instantiate a Bounce object with a 5 millisecond debounce time
-Bounce bouncer = Bounce( PINLEARN,50 ); 
-unsigned long bounceDuration=0;
+Bounce bouncer = Bounce(PINLEARN, 50);
+unsigned long bounceDuration = 0;
+
+struct MIDISettings : public midi::DefaultSettings {
+  static const bool UseRunningStatus = false;
+  static const bool Use1ByteParsing = false;
+};
+
+MIDI_CREATE_CUSTOM_INSTANCE(HardwareSerial, Serial, MIDI, MIDISettings);
 
 //////////////////////////////////////////////
 // Initialization
-void setup() {
+void setup()
+{
 
 
   // Configure digital outputs
-  pinMode(PINLED,OUTPUT);
+  pinMode(PINLED, OUTPUT);
   digitalWrite(PINLED, LOW); // Set internal pull down resistor
-  pinMode(PINGATE,OUTPUT);
+  pinMode(PINLED2, OUTPUT);
+  digitalWrite(PINLED2, LOW); // Set internal pull down resistor
+  pinMode(PINGATE, OUTPUT);
   digitalWrite(PINGATE, LOW); // Set internal pull down resistor
-  pinMode(PINGATE2,OUTPUT);
+  pinMode(PINGATE2, OUTPUT);
   digitalWrite(PINGATE2, LOW); // Set internal pull down resistor
-  pinMode(PINGATE3,OUTPUT);
+  pinMode(PINGATE3, OUTPUT);
   digitalWrite(PINGATE3, LOW); // Set internal pull down resistor
-  pinMode(PINGATE4,OUTPUT);
+  pinMode(PINGATE4, OUTPUT);
   digitalWrite(PINGATE4, LOW); // Set internal pull down resistor
-  pinMode(PINSTARTSTOP,OUTPUT);
+  pinMode(PINSTARTSTOP, OUTPUT);
   digitalWrite(PINSTARTSTOP, LOW); // Set internal pull down resistor
-  pinMode(PINLEARN,INPUT);
+  pinMode(PINLEARN, INPUT);
   //digitalWrite(PINLEARN, LOW); // Set internal pull down resistor
-  pinMode(PINCLOCK,OUTPUT);
+  pinMode(PINCLOCK, OUTPUT);
   digitalWrite(PINCLOCK, LOW); // Set internal pull down resistor
 
   // DAC MCP4728 init
   dac.begin();  // initialize i2c interface
   dac.vdd(5000); // set VDD(mV) of MCP4728 for correct conversion between LSB and Vout
-  dac.setVref(1,1,1,1); // Use internal vref
-  dac.setGain(1,1,1,1); // Use gain x2
-  for( int i=0; i<4;i++) DACConv[i].DACnum=i;
-  
+  dac.setVref(1, 1, 1, 1); // Use internal vref
+  dac.setGain(1, 1, 1, 1); // Use gain x2
+  for (int i = 0; i < 4; i++) {
+    DACConv[i].DACnum = i;
+  }
+
   // Init triggers gates
-  gates[0].pinLED = PITCHCV+128;
-  gates[1].pinLED = VELOC+128; 
-  gates[2].pinLED = MODUL+128;
-  gates[3].pinLED = BEND+128;
+  gates[0].pinLED = PITCHCV + 128;
+  gates[1].pinLED = VELOC + 128;
+  gates[2].pinLED = MODUL + 128;
+  gates[3].pinLED = BEND + 128;
   gates[4].pinLED = PINCLOCK;
   gates[5].pinLED = PINGATE;
   gates[6].pinLED = PINGATE2;
@@ -180,9 +196,8 @@ void setup() {
   gates[9].pinLED = PINSTARTSTOP;
 
   //  Init MIDI:
-  MIDI.begin(MIDI_CHANNEL_OMNI); // Listen to all channels
   //Serial.begin(115200);
-  //MIDI.turnThruOff(); // Thru off disconnected
+  MIDI.turnThruOff(); // Thru off disconnected
   MIDI.setHandleNoteOn(HandleNoteOn); // Handle for NoteOn
   MIDI.setHandleNoteOff(HandleNoteOff); // Handle for NoteOff
   MIDI.setHandlePitchBend(HandlePitchBend); // Handle for Pitch Bend
@@ -193,9 +208,17 @@ void setup() {
   MIDI.setHandleStop(HandleStop);
 #endif
   MIDI.setHandleClock(HandleClock);
-    
+  MIDI.begin(MIDI_CHANNEL_OMNI); // Listen to all channels
+
+#ifdef PRINTDEBUG
+  Serial.println("Init MIDItoCV...");
+#endif
+
   // Read MIDI Channels from EEPROM and store
-  if( ReadMIDIeeprom() ==-1){
+  if (ReadMIDIeeprom() == -1) {
+#ifdef PRINTDEBUG
+    Serial.println("No EEPROM Read");
+#endif
     // Set Mode manually
     //SetModeMIDI(MONOMIDI);
     //SetModeMIDI(DUALMIDI);
@@ -203,57 +226,80 @@ void setup() {
     //SetModeMIDI(PERCTRIG);
   }
 
-  
+
   // LDAC pin must be grounded for normal operation.
   // Reset DAC values to 0 after reset
   delay(50);
-  dac.analogWrite(0,0,0,0);
-    
-  #ifdef CALIBRATION
+  dac.analogWrite(0, 0, 0, 0);
+
+#ifdef CALIBRATION
   analogReference(INTERNAL);
-  #endif
+#endif
 }
 
 //////////////////////////////////////////////
 // Main Loop
-void loop() {
-    // put your main code here, to run repeatedly:
-    //if( LearnMode != ENTERCAL) 
-	MIDI.read();
-	blink.playBlink();
-	for (int i=0; i<10; i++) gates[i].playBlink();
+void loop()
+{
+  // put your main code here, to run repeatedly:
+  //if( LearnMode != ENTERCAL)
+  MIDI.read();
+  blink.playBlink();
+  for (int i = 0; i < 10; i++) {
+    gates[i].playBlink();
+  }
 
-    // Cal/Learn Button
-    bounceDuration = bouncer.duration();
-    bouncer.update ( );   // Update the debouncer
-	
-    // In Learn mode, enter learn cycle 
-    if ( LearnMode == ENTERLEARN) DoLearnCycle();
-    else if (LearnMode == ENTERCAL)
-      { 
-        DoCalCycle();
-        // If button pressed during calbration, end calibration
-        if( bouncer.fallingEdge()) EndCalMode();
-      }
-    else{
-      // Check for learn/cal mode signal
-      if( bouncer.fallingEdge()){
-		// Enter Calmode after 5 secs button press 
-		if( bounceDuration > 5000) EnterCalMode();
-		else if( bounceDuration > 1000) EnterLearnMode();
-		}
+  // Cal/Learn Button
+  bounceDuration = bouncer.duration();
+  bouncer.update();     // Update the debouncer
+
+  // In Learn mode, enter learn cycle
+  if (LearnMode == ENTERLEARN) {
+    DoLearnCycle();
+  } else if (LearnMode == ENTERCAL) {
+    DoCalCycle();
+    // If button pressed during calbration, end calibration
+    if (bouncer.fallingEdge()) {
+      EndCalMode();
     }
-    
+  } else {
+    // Check for learn/cal mode signal
+    if (bouncer.fallingEdge()) {
+      // Enter Calmode after 5 secs button press
+      if (bounceDuration > 5000) {
+        EnterCalMode();
+      }
+      // More than one second: Learn Mode
+      else if (bounceDuration > 1000) {
+        EnterLearnMode();
+      }
+      // Panic
+      else if (bounceDuration > 100) {
+        AllNotesOff();
+      }
+    }
+  }
+
 }
-	
+
 
 
 
 //////////////////////////////////////////////
-// DAC function definition   
-// Send value val to DAC port 
-void  sendvaltoDAC(unsigned int port, unsigned int val){  
-  dac.analogWrite(port,val); // write to input register of a DAC. Channel 0-3, Value 0-4095
+// DAC function definition
+// Send value val to DAC port
+void  sendvaltoDAC(unsigned int port, unsigned int val)
+{
+
+  dac.analogWrite(port, val); // write to input register of a DAC. Channel 0-3, Value 0-4095
+
+
+#ifdef PRINTDEBUG
+  Serial.print(port);
+  Serial.print(" DAC = ");
+  Serial.println(val);
+#endif
+
 }
 
 
