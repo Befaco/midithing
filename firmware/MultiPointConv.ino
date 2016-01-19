@@ -25,7 +25,6 @@
 // -----------------------------------------------------------------------------
 //
 
-
 // Make conversion interpolating between points
 unsigned int MultiPointConv::intervalConvert(int inp)
 {
@@ -67,7 +66,7 @@ unsigned int MultiPointConv::intervalConvert(int inp)
   Serial.print(" DAC Output: ");
   Serial.println(outp);
 #endif
-  return outp;
+  return (outp);
 }
 
 byte MultiPointConv::Processnote(byte channel, byte pitch, byte velocity)
@@ -75,7 +74,7 @@ byte MultiPointConv::Processnote(byte channel, byte pitch, byte velocity)
   LearnInitTime = millis(); // Reset calibration counter
   int val = pitch - minInput; // Adjust learnt zero value
   if (val < 0) {
-    return 0;
+    return (0);
   }
   if (val > 119) {
     val = 119;  // max 10 oct. = 120 notes
@@ -84,7 +83,7 @@ byte MultiPointConv::Processnote(byte channel, byte pitch, byte velocity)
   // Look for interval
   int interv = val / 6;
   if (interv > 19) {
-    return 0;
+    return (0);
   }
 
   if (val == (interv + 1) * 6 - 1) { //decrease
@@ -92,7 +91,7 @@ byte MultiPointConv::Processnote(byte channel, byte pitch, byte velocity)
   } else if (val == interv * 6 + 1) { //increase
     DACPoints[interv]++;
   } else {
-    return 0;
+    return (0);
   }
 
 #ifdef PRINTDEBUG
@@ -105,6 +104,5 @@ byte MultiPointConv::Processnote(byte channel, byte pitch, byte velocity)
   Serial.print(" DAC New value: ");
   Serial.println(DACPoints[interv]);
 #endif
-  return 1;
+  return (1);
 }
-

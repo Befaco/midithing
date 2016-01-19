@@ -63,5 +63,4 @@ public:
   void playNote(byte note, byte plvelocity);
   void playNoteOff(void);
   void LearnThis(byte channel, byte pitch, byte velocity);
-
 };

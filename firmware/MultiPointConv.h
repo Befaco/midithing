@@ -25,7 +25,6 @@
 // -----------------------------------------------------------------------------
 //
 
-
 // Utility class to convert MIDI to CV Range
 // Linear scale input to output (defined as minimun/range)
 class RangeConv
@@ -51,7 +50,7 @@ public:
 
 // Utility class to convert MIDI to CV Range
 // Multi-Linear scale input to output (defined as 20 fix points and output as interpolation between each pair of fix points)
-class MultiPointConv: public RangeConv
+class MultiPointConv : public RangeConv
 {
 public:
   int DACPoints[21];
@@ -70,4 +69,3 @@ public:
   unsigned int intervalConvert(int inp);
   byte Processnote(byte channel, byte pitch, byte velocity);
 };
-

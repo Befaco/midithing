@@ -36,12 +36,13 @@ void Blinker::setBlink(unsigned long pon, unsigned long poff, int times, int new
   countBlinks = times;
   // Turn off blinker
   if (times == 0) {
-    if (pinLED > 0)
+    if (pinLED > 0) {
       if (pinLED < 128) {
         digitalWrite(pinLED, LOW);
       } else {
         sendvaltoDAC(pinLED - 128, 0);
       }
+    }
     status = LOW;
     return;
   }
@@ -50,14 +51,14 @@ void Blinker::setBlink(unsigned long pon, unsigned long poff, int times, int new
   periodoff = poff;
   initblink = millis();
   status = HIGH;
-  if (pinLED > 0)
+  if (pinLED > 0) {
     if (pinLED < 128) {
       digitalWrite(pinLED, HIGH);
     } else {
       sendvaltoDAC(pinLED - 128, 4095);
     }
+  }
 }
-
 
 // Cyclic run of blink
 void Blinker::playBlink(void)
@@ -75,12 +76,13 @@ void Blinker::playBlink(void)
       // End of period on
       initblink = current;
       status = LOW;
-      if (pinLED > 0)
+      if (pinLED > 0) {
         if (pinLED < 128) {
           digitalWrite(pinLED, LOW);
         } else {
           sendvaltoDAC(pinLED - 128, 0);
         }
+      }
     }
   }
   // Check end of period off
@@ -94,12 +96,13 @@ void Blinker::playBlink(void)
     // If not zero, init next cycle
     if (countBlinks != 0) {
       status = HIGH;
-      if (pinLED > 0)
+      if (pinLED > 0) {
         if (pinLED < 128) {
           digitalWrite(pinLED, HIGH);
         } else {
           sendvaltoDAC(pinLED - 128, 4095);
         }
+      }
     }
   }
 }

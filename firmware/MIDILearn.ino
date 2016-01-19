@@ -30,11 +30,9 @@
 // Learn mode
 // Learn Mode selected
 
-
 // Initialize Learn Mode
 void EnterLearnMode(void)
 {
-
   // Set Learn mode flag
   LearnMode = ENTERLEARN;
   LearnStep = 0;
@@ -50,7 +48,6 @@ void EnterLearnMode(void)
   Serial.println("Init Learn Mode");
 #endif
 }
-
 
 // Learn Mode Cycle function
 void DoLearnCycle(void)
@@ -124,34 +121,34 @@ void EndCalMode(void)
 #endif
 }
 
-
 byte CalProcessNote(byte channel, byte pitch, byte velocity)
 {
   if (channel < 5) { // Channels 1-4 for DAC calibration 0-3
-    return DACConv[channel - 1].Processnote(channel, pitch, velocity);
-  } else if (channel == 5)
+    return (DACConv[channel - 1].Processnote(channel, pitch, velocity));
+  } else if (channel == 5) {
     // Channel 5 for setting modes
     switch (pitch) {
     case 0:
       SetModeMIDI(MONOMIDI);
-      return 1;
+      return (1);
       break;
     case 2:
       SetModeMIDI(DUALMIDI);
-      return 1;
+      return (1);
       break;
     case 4:
       SetModeMIDI(QUADMIDI);
-      return 1;
+      return (1);
       break;
     case 5:
       SetModeMIDI(PERCTRIG);
-      return 1;
+      return (1);
       break;
       /*case 6:
-        SetModeMIDI(PERCGATE);
-        break;
-                        */
+         SetModeMIDI(PERCGATE);
+         break;
+       */
     }
-  return 0;
+  }
+  return (0);
 }

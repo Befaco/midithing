@@ -25,11 +25,9 @@
 // -----------------------------------------------------------------------------
 //
 
-
 // Actions to perform for Note On
 void MIDICV::ProcessNoteOn(byte pitch, byte velocity)
 {
-
 #ifdef PRINTDEBUG
   Serial.print(pitch);
   Serial.print(" noteon / v ");
@@ -59,7 +57,6 @@ void MIDICV::ProcessNoteOn(byte pitch, byte velocity)
     playNote(pitch, velocity);
   }
 }
-
 
 // Actions to perform for Note Off
 void MIDICV::ProcessNoteOff(byte pitch, byte velocity)
@@ -111,7 +108,6 @@ void MIDICV::ProcessNoteOff(byte pitch, byte velocity)
   }
 }
 
-
 // Actions to perform for Pitch Bend
 void MIDICV::ProcessBend(int bend)
 {
@@ -134,7 +130,6 @@ void MIDICV::ProcessBend(int bend)
 #endif
   sendvaltoDAC(BendDAC->DACnum, voltage);
 }
-
 
 // Actions to perform for Modulation change
 void MIDICV::ProcessModul(byte value)
@@ -175,13 +170,13 @@ void MIDICV::PrintNotes(void)
 byte MIDICV::CheckRepeat(byte pitch)
 {
   if (nNotesOn < 1) {
-    return 0;
+    return (0);
   }
 
   if (playingNotes[pitch]) {
-    return 1;
+    return (1);
   }
-  return 0;
+  return (0);
 }
 
 // Play Notes to DAC and pin outputs
@@ -221,8 +216,6 @@ void MIDICV::playNoteOff(void)
   }
 }
 
-
-
 // Note on received in Learn Mode
 // Capture channel and new minimum note
 void MIDICV::LearnThis(byte channel, byte pitch, byte velocity)
@@ -258,8 +251,6 @@ void MIDICV::LearnThis(byte channel, byte pitch, byte velocity)
   }
 }
 
-
-
 ///////////////////////////////////
 // Support functions for MIDI class
 
@@ -268,15 +259,15 @@ int CheckActiveMIDI(byte channel, byte pitch)
 {
   // If in percussion mode, check the note and return the associated gate
   if ((MIDImode == PERCTRIG || MIDImode == PERCGATE) && channel == 10) {
-    return PercussionNoteGate(pitch);
+    return (PercussionNoteGate(pitch));
   }
   // In other modes, check if received one is an active channel
   for (int i = 0; i < MAXNumMIDI; i++) {
     if (ChanMIDI[i].midiChannel == channel && ChanMIDI[i].PitchDAC->minInput < pitch) {
-      return i;
+      return (i);
     }
   }
-  return -1;
+  return (-1);
 }
 
 // Check percussion notes and return associated gate
@@ -284,27 +275,27 @@ int PercussionNoteGate(byte pitch)
 {
   switch (pitch) {
   case 36:
-    return 0;
+    return (0);
   case 38:
-    return 1;
+    return (1);
   case 42:
-    return 2;
+    return (2);
   case 45:
-    return 3;
+    return (3);
   case 46:
-    return 4;
+    return (4);
   case 47:
-    return 5;
+    return (5);
   case 48:
-    return 6;
+    return (6);
   case 49:
-    return 7;
+    return (7);
   case 51:
-    return 8;
+    return (8);
   case 56:
-    return 9;
+    return (9);
   }
-  return -1;
+  return (-1);
 }
 
 // Check if received channel is any active MIDI
@@ -315,7 +306,6 @@ void AllNotesOff(void)
     ChanMIDI[i].nNotesOn = 0;
   }
 }
-
 
 // Read MIDI properties from eeprom
 int ReadMIDIeeprom(void)
@@ -335,44 +325,49 @@ int ReadMIDIeeprom(void)
   Serial.println(modeMIDI);
 #endif
   if (numMIDI < 1 || numMIDI > 4) {
-    return -1;
+    return (-1);
   }
   if (modeMIDI < MONOMIDI || modeMIDI > PERCGATE) {
-    return -1;
+    return (-1);
   }
 
   for (i = 0; i < 4; i++) {
-    eeprom_read_block((void *)&TempConv, (void *)(sizeof(int) * 2 + i * (sizeof(TempConv) + sizeof(TempMIDI))), sizeof(TempConv));
+    eeprom_read_block((void *)&TempConv,
+                      (void *)(sizeof(int) * 2 + i * (sizeof(TempConv) + sizeof(TempMIDI))),
+                      sizeof(TempConv));
     // stored in Pitch Only if EEPROM values for rangeDAC are correct
     if (i == 0) {
       if (TempConv.rangeDAC == 4093) {
         memcpy(&DACConv[i], &TempConv, sizeof(DACConv[i]));
       } else {
-        return -1;
+        return (-1);
       }
     } else {
       memcpy(&DACConv[i], &TempConv, sizeof(DACConv[i]));
     }
 
-    eeprom_read_block((void *)&TempMIDI, (void *)(sizeof(int) * 2 + sizeof(TempConv) + i * (sizeof(TempConv) + sizeof(TempMIDI))), sizeof(TempMIDI));
+    eeprom_read_block((void *)&TempMIDI,
+                      (void *)(sizeof(int) * 2 + sizeof(TempConv) + i *
+                               (sizeof(TempConv) + sizeof(TempMIDI))),
+                      sizeof(TempMIDI));
     memcpy(&ChanMIDI[i], &TempMIDI, sizeof(ChanMIDI[i]));
     /*
-      #ifdef PRINTDEBUG
-      Serial.print("DACConv addr: ");
-      Serial.print((sizeof(int)*2+i*(sizeof(TempConv)+sizeof(TempMIDI))));
-      Serial.print(" /2: ");
-      Serial.println((sizeof(int)*2+sizeof(TempConv)+i*(sizeof(TempConv)+sizeof(TempMIDI))));
-      Serial.print("DACConv 1: ");
-      Serial.print(DACConv[i].DACPoints[1]);
-      Serial.print(" /2: ");
-      Serial.println(DACConv[i].DACPoints[2]);
-      #endif
-    */
+       #ifdef PRINTDEBUG
+       Serial.print("DACConv addr: ");
+       Serial.print((sizeof(int)*2+i*(sizeof(TempConv)+sizeof(TempMIDI))));
+       Serial.print(" /2: ");
+       Serial.println((sizeof(int)*2+sizeof(TempConv)+i*(sizeof(TempConv)+sizeof(TempMIDI))));
+       Serial.print("DACConv 1: ");
+       Serial.print(DACConv[i].DACPoints[1]);
+       Serial.print(" /2: ");
+       Serial.println(DACConv[i].DACPoints[2]);
+       #endif
+     */
   }
   MAXNumMIDI = numMIDI;
   MIDImode = modeMIDI;
 
-  return MAXNumMIDI;
+  return (MAXNumMIDI);
 }
 
 // Write MIDI properties from eeprom
@@ -396,22 +391,26 @@ void WriteMIDIeeprom(void)
     if (i == 0) {
       DACConv[i].rangeDAC = 4093;
     }
-    eeprom_write_block((const void *)&DACConv[i], (void *)(sizeof(MAXNumMIDI) * 2 + i * (sizeof(DACConv[i]) + sizeof(ChanMIDI[i]))), sizeof(DACConv[i]));
-    eeprom_write_block((const void *)&ChanMIDI[i], (void *)(sizeof(MAXNumMIDI) * 2 + sizeof(DACConv[i]) + i * (sizeof(ChanMIDI[i]) + sizeof(DACConv[i]))), sizeof(ChanMIDI[i]));
+    eeprom_write_block((const void *)&DACConv[i],
+                       (void *)(sizeof(MAXNumMIDI) * 2 + i *
+                                (sizeof(DACConv[i]) + sizeof(ChanMIDI[i]))),
+                       sizeof(DACConv[i]));
+    eeprom_write_block((const void *)&ChanMIDI[i],
+                       (void *)(sizeof(MAXNumMIDI) * 2 + sizeof(DACConv[i]) + i *
+                                (sizeof(ChanMIDI[i]) + sizeof(DACConv[i]))), sizeof(ChanMIDI[i]));
     /*
-      #ifdef PRINTDEBUG
-      Serial.print("DACConv addr: ");
-      Serial.print((sizeof(MAXNumMIDI)*2+i*(sizeof(DACConv[i])+sizeof(ChanMIDI[i]))));
-      Serial.print(" /2: ");
-      Serial.println((sizeof(MAXNumMIDI)*2+sizeof(DACConv[i])+i*(sizeof(ChanMIDI[i])+sizeof(DACConv[i]))));
-      Serial.print("DACConv 1: ");
-      Serial.print(DACConv[i].DACPoints[1]);
-      Serial.print(" /2: ");
-      Serial.println(DACConv[i].DACPoints[2]);
-      #endif
-    */
+       #ifdef PRINTDEBUG
+       Serial.print("DACConv addr: ");
+       Serial.print((sizeof(MAXNumMIDI)*2+i*(sizeof(DACConv[i])+sizeof(ChanMIDI[i]))));
+       Serial.print(" /2: ");
+       Serial.println((sizeof(MAXNumMIDI)*2+sizeof(DACConv[i])+i*(sizeof(ChanMIDI[i])+sizeof(DACConv[i]))));
+       Serial.print("DACConv 1: ");
+       Serial.print(DACConv[i].DACPoints[1]);
+       Serial.print(" /2: ");
+       Serial.println(DACConv[i].DACPoints[2]);
+       #endif
+     */
   }
-
 }
 
 // Set default MIDI properties manually
@@ -449,7 +448,7 @@ void SetModeMIDI(int mode)
     ChanMIDI[0].pinGATE = PINGATE;
     ChanMIDI[0].midiChannel = 1;
     ChanMIDI[1].PitchDAC = &DACConv[2];
-    ChanMIDI[1].VelDAC = &DACConv[3];;
+    ChanMIDI[1].VelDAC = &DACConv[3];
     ChanMIDI[1].pinGATE = PINGATE3;
     ChanMIDI[1].midiChannel = 2;
     break;

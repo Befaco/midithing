@@ -25,23 +25,21 @@
 // -----------------------------------------------------------------------------
 //
 
-
-
 //#define PRINTDEBUG 1// if defined, send debug info to the serial interface
 //#define USETIMER  // if defined, use timer functions
 #define CALIBRATION 1
 #define STARTSTOPCONT // if defined, handle start/stop/continue
 
-#include <Wire.h> //  I2C Comm
-#include <mcp4728.h> // MCP4728 library
-#include <MIDI.h> // MIDI library
 #include <Bounce.h> // Button debouncer
 #include <EEPROM.h>
+#include <MIDI.h> // MIDI library
+#include <Wire.h> //  I2C Comm
+#include <mcp4728.h> // MCP4728 library
 //#include "EEPROMAnything.h"
-#include <avr/eeprom.h>
-#include "MultiPointConv.h"
-#include "MIDIClass.h"
 #include "Blinker.h"
+#include "MIDIClass.h"
+#include "MultiPointConv.h"
+#include <avr/eeprom.h>
 
 // Input / output definitions
 // DAC Ports
@@ -152,8 +150,6 @@ MIDI_CREATE_CUSTOM_INSTANCE(HardwareSerial, Serial, MIDI, MIDISettings);
 // Initialization
 void setup()
 {
-
-
   // Configure digital outputs
   pinMode(PINLED, OUTPUT);
   digitalWrite(PINLED, LOW); // Set internal pull down resistor
@@ -226,7 +222,6 @@ void setup()
     //SetModeMIDI(PERCTRIG);
   }
 
-
   // LDAC pin must be grounded for normal operation.
   // Reset DAC values to 0 after reset
   delay(50);
@@ -279,29 +274,18 @@ void loop()
       }
     }
   }
-
 }
-
-
-
 
 //////////////////////////////////////////////
 // DAC function definition
 // Send value val to DAC port
 void  sendvaltoDAC(unsigned int port, unsigned int val)
 {
-
   dac.analogWrite(port, val); // write to input register of a DAC. Channel 0-3, Value 0-4095
-
 
 #ifdef PRINTDEBUG
   Serial.print(port);
   Serial.print(" DAC = ");
   Serial.println(val);
 #endif
-
 }
-
-
-
-

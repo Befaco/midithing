@@ -40,10 +40,11 @@ void HandleNoteOn(byte channel, byte pitch, byte velocity)
   }
   // If in cal mode, adjust notes
   if (LearnMode == ENTERCAL && velocity > 0) {
-    if (channel < 6)
+    if (channel < 6) {
       if (CalProcessNote(channel, pitch, velocity)) {
         return;  // do not play note if calibration key pressed
       }
+    }
   }
 
   // Check if received channel is any active MIDI
@@ -98,7 +99,6 @@ void HandleNoteOff(byte channel, byte pitch, byte velocity)
   ChanMIDI[MIDIactive].ProcessNoteOff(pitch, velocity);
 }
 
-
 // Do whatever you want when you receive a Note On.
 void HandlePitchBend(byte channel, int bend)
 {
@@ -116,7 +116,6 @@ void HandlePitchBend(byte channel, int bend)
 
   ChanMIDI[MIDIactive].ProcessBend(bend);
 }
-
 
 // Do whatever you want when you receive a Control Change
 void HandleControlChange(byte channel, byte number, byte value)
@@ -148,7 +147,6 @@ void HandleControlChange(byte channel, byte number, byte value)
     return;
   }
 }
-
 
 #ifdef STARTSTOPCONT
 // Handle MIDI Start/Stop/Continue
@@ -196,15 +194,12 @@ void HandleClock(void)
     gates[4].setBlink(TRIGCLOCK, 1, 1);
   }
   /*
-  digitalWrite( PINCLOCK, HIGH);
-  //digitalWrite( PINLED, HIGH);
-  delayMicroseconds(2000); // 2 milliseconds delay
-  digitalWrite( PINCLOCK, LOW);
-  //digitalWrite( PINLED, LOW);
-  */
-
+     digitalWrite( PINCLOCK, HIGH);
+     //digitalWrite( PINLED, HIGH);
+     delayMicroseconds(2000); // 2 milliseconds delay
+     digitalWrite( PINCLOCK, LOW);
+     //digitalWrite( PINLED, LOW);
+   */
 }
 
 #endif  //STARTSTOPCONT
-
-
