@@ -1,16 +1,15 @@
+# MIDI Thing
+Firmware for the [Befaco](http://befaco.org) Eurorack MIDI module (MIDI Thing).
 
-# MIDterface
-Befaco Midi interface
+## Requirements
+You need Arduino >= 1.6.3.
 
-This is the official repo for the MIDterface (Midi Eurorack Module) from Befaco.
+Additionally you will need the following libraries installed (see the [Arduino Guide](https://www.arduino.cc/en/Guide/Libraries) on how to do this):
 
-# Uploading the firmware
-
-To upload you first need to install all the libraries, so copy the content in that folder to your local Arduino Library folder, in Windows are located in ___My Documents\Arduino\libraries\___ or in Mac   ___Documents/Arduino/libraries/ArduinoParty/___.
-
-You will also require the Arduino IDE version 1.6.3 or greater.
-
-##Bootloader##
+* [MIDI](https://github.com/FortySevenEffects/arduino_midi_library)
+* [Bounce](https://github.com/thomasfredericks/Bounce2) (currently Bounce1 is needed. Please use it [until we've moved to Bounce2](https://github.com/Befaco/midithing/issues/3)).
+* [mcp4728](https://code.google.com/p/neuroelec/downloads/detail?name=mcp4728_library-v1.3.zip)
 
 
-##Uploading firmware##
+## Uploading the firmware
+
