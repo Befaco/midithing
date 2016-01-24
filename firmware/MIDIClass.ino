@@ -85,7 +85,8 @@ void MIDICV::ProcessNoteOff(byte pitch, byte velocity)
   if (nNotesOn == 1) {
     // Last note, play note off
     nNotesOn = 0;
-    playNote(pitch, 0);
+    //playNote(pitch, 0);
+    playNoteOff(); //Leaving Pitch and velocity value and Gate down
 #ifdef PRINTDEBUG
     Serial.print(" Last Note Off: ");
     Serial.println(pitch);
@@ -286,8 +287,6 @@ int PercussionNoteGate(byte pitch)
     return (2);
   case 45:
     return (3);
-  case 46:
-    return (4);
   case 47:
     return (5);
   case 48:
@@ -296,8 +295,6 @@ int PercussionNoteGate(byte pitch)
     return (7);
   case 51:
     return (8);
-  case 56:
-    return (9);
   }
   return (-1);
 }

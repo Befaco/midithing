@@ -71,9 +71,9 @@
 #define PERCGATE 6
 
 //
-#define TRIGPERCUSSION 100 // Width of trigger for percussions
-#define TRIGCLOCK 200 // Width of trigger for Clock
-#define TRIGSTART 200 // Width of trigger for Start/Continue
+#define TRIGPERCUSSION 60 // Width of trigger for percussions
+#define TRIGCLOCK 60 // Width of trigger for Clock
+#define TRIGSTART 60// Width of trigger for Start/Continue
 
 //////////////////////////////////////////////
 // Function declaration
