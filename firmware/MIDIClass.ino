@@ -43,7 +43,7 @@ void MIDICV::ProcessNoteOn(byte pitch, byte velocity)
   int repeat = CheckRepeat(pitch);
   char newnote = 0;
   if (!repeat) {
-    playingNotes[pitch] = 1;
+    setbit128(playingNotes, pitch);
     NotesOn[nNotesOn] = { pitch, velocity };
     nNotesOn++;
     newnote = 1;
@@ -81,11 +81,10 @@ void MIDICV::ProcessNoteOff(byte pitch, byte velocity)
 #endif
     return; // Note on for received note off not found
   }
-  playingNotes[pitch] = 0;
+  unsetbit128(playingNotes, pitch);
   if (nNotesOn == 1) {
     // Last note, play note off
     nNotesOn = 0;
-    //playNote(pitch, 0);
     playNoteOff(); //Leaving Pitch and velocity value and Gate down
 #ifdef PRINTDEBUG
     Serial.print(" Last Note Off: ");
@@ -178,7 +177,7 @@ byte MIDICV::CheckRepeat(byte pitch)
     return (0);
   }
 
-  if (playingNotes[pitch]) {
+  if (isbitset128(playingNotes, pitch)) {
     return (1);
   }
   return (0);

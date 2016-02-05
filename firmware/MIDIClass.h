@@ -24,6 +24,30 @@
 //
 // -----------------------------------------------------------------------------
 //
+// bitfield implementation adapted from
+// http://stackoverflow.com/questions/1590893/error-trying-to-define-a-1-024-bit-128-byte-bit-field
+#include <limits.h>
+typedef byte BitField128[16]; // 128 bits
+
+static inline void setbit128(BitField128 field, size_t idx)
+{
+  field[idx / CHAR_BIT] |= 1u << (idx % CHAR_BIT);
+}
+
+static inline void unsetbit128(BitField128 field, size_t idx)
+{
+  field[idx / CHAR_BIT] &= ~(1u << (idx % CHAR_BIT));
+}
+
+static inline void togglebit128(BitField128 field, size_t idx)
+{
+  field[idx / CHAR_BIT] ^= 1u << (idx % CHAR_BIT);
+}
+
+static inline bool isbitset128(BitField128 field, size_t idx)
+{
+  return field[idx / CHAR_BIT] & (1u << (idx % CHAR_BIT));
+}
 
 #define MAXNOTES 8
 
@@ -40,7 +64,7 @@ class MIDICV
 public:
   // Var MIDI
   byte midiChannel = 1; // Initial channel
-  byte playingNotes[128] = {0}; // more efficient than iterating list
+  BitField128 playingNotes = {0}; // more efficient than iterating list
   NoteEvent NotesOn[MAXNOTES];
   byte nNotesOn = 0; // Number of notes on
   byte pinGATE = 2;
