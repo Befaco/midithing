@@ -263,8 +263,12 @@ void loop()
 
     // Check for learn/cal mode signal
     if (bouncer.fell()) {
+      // If button pressed during calbration, end calibration
+      if (LearnMode == ENTERCAL) {
+        EndCalMode();
+      }
       // Enter Calmode after 5 secs button press
-      if (bouncerDuration > 5000) {
+      else if (bouncerDuration > 5000) {
         EnterCalMode();
       }
       // More than one second: Learn Mode
@@ -282,10 +286,6 @@ void loop()
       DoLearnCycle();
     } else if (LearnMode == ENTERCAL) {
       DoCalCycle();
-      // If button pressed during calbration, end calibration
-      if (bouncer.fell()) {
-        EndCalMode();
-      }
     }
   }
 }
