@@ -30,7 +30,7 @@
 #define CALIBRATION 1
 #define STARTSTOPCONT // if defined, handle start/stop/continue
 
-#include <Bounce.h> // Button debouncer
+#include <Bounce2.h> // Button debouncer
 #include <EEPROM.h>
 #include <MIDI.h> // MIDI library
 #include <Wire.h> //  I2C Comm
@@ -135,9 +135,8 @@ byte LearnStep = 0;
 // Var Blinker
 Blinker blink((byte)PINLED);
 
-// Instantiate a Bounce object with a 5 millisecond debounce time
-Bounce bouncer = Bounce(PINLEARN, 50);
-unsigned long bounceDuration = 0;
+Bounce bouncer = Bounce(); // will be configured in setup()
+unsigned long bouncerLastTime = 0;
 
 struct MIDISettings : public midi::DefaultSettings {
   static const bool UseRunningStatus = false;
@@ -165,10 +164,14 @@ void setup()
   digitalWrite(PINGATE4, LOW); // Set internal pull down resistor
   pinMode(PINSTARTSTOP, OUTPUT);
   digitalWrite(PINSTARTSTOP, LOW); // Set internal pull down resistor
-  pinMode(PINLEARN, INPUT);
-  //digitalWrite(PINLEARN, LOW); // Set internal pull down resistor
   pinMode(PINCLOCK, OUTPUT);
   digitalWrite(PINCLOCK, LOW); // Set internal pull down resistor
+
+  pinMode(PINLEARN, INPUT); // maybe INPUT_PULLUP?
+  // Attach the Bounce object with a 50 millisecond debounce time
+  bouncer.attach(PINLEARN);
+  bouncer.interval(50);
+  //digitalWrite(PINLEARN, LOW); // Set internal pull down resistor
 
   // DAC MCP4728 init
   dac.begin();  // initialize i2c interface
@@ -237,40 +240,51 @@ void setup()
 void loop()
 {
   // put your main code here, to run repeatedly:
-  //if( LearnMode != ENTERCAL)
+
   MIDI.read();
+
+  // handle any glides
+  for (int i = 0; i < 4; i++) {
+    ChanMIDI[i].Glide();
+  }
+
+  // handle blinks
   blink.playBlink();
   for (int i = 0; i < 10; i++) {
     gates[i].playBlink();
   }
 
   // Cal/Learn Button
-  bounceDuration = bouncer.duration();
-  bouncer.update();     // Update the debouncer
+  if (bouncer.update()) { // button state changed
+    unsigned long now = millis();
+    unsigned long bouncerDuration = now - bouncerLastTime;
 
-  // In Learn mode, enter learn cycle
-  if (LearnMode == ENTERLEARN) {
-    DoLearnCycle();
-  } else if (LearnMode == ENTERCAL) {
-    DoCalCycle();
-    // If button pressed during calbration, end calibration
-    if (bouncer.fallingEdge()) {
-      EndCalMode();
-    }
-  } else {
+    bouncerLastTime = now;
+
     // Check for learn/cal mode signal
-    if (bouncer.fallingEdge()) {
+    if (bouncer.fell()) {
       // Enter Calmode after 5 secs button press
-      if (bounceDuration > 5000) {
+      if (bouncerDuration > 5000) {
         EnterCalMode();
       }
       // More than one second: Learn Mode
-      else if (bounceDuration > 1000) {
+      else if (bouncerDuration > 1000) {
         EnterLearnMode();
       }
       // Panic
-      else if (bounceDuration > 100) {
+      else if (bouncerDuration > 100) {
         AllNotesOff();
+      }
+    }
+  } else { // no change to the button state
+    // In Learn mode, enter learn cycle
+    if (LearnMode == ENTERLEARN) {
+      DoLearnCycle();
+    } else if (LearnMode == ENTERCAL) {
+      DoCalCycle();
+      // If button pressed during calbration, end calibration
+      if (bouncer.fell()) {
+        EndCalMode();
       }
     }
   }

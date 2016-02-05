@@ -1,5 +1,5 @@
 #######################################
-# Syntax Coloring Map For Debounce
+# Syntax Coloring Map For Bounce2
 #######################################
 
 #######################################
@@ -15,10 +15,9 @@ Bounce	 KEYWORD1
 update	 KEYWORD2
 interval	 KEYWORD2
 read	 KEYWORD2
-write	 KEYWORD2
-rebounce	 KEYWORD2
-risingEdge	KEYWORD2
-fallingEdge	KEYWORD2
+attach	 KEYWORD2
+rose	KEYWORD2
+fell	KEYWORD2
 
 #######################################
 # Instances (KEYWORD2)
