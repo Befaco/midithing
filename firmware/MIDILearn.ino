@@ -96,8 +96,8 @@ void DoCalCycle(void)
 {
   unsigned long current = millis();
 
-  // After 55 seconds without receiving a note, exit calibration
-  if (current > LearnInitTime + 55000) {
+  // After 120 seconds without receiving a note, exit calibration
+  if (current > LearnInitTime + 120000) {
 #ifdef PRINTDEBUG
     Serial.print(LearnInitTime);
     Serial.print(" msec ");
