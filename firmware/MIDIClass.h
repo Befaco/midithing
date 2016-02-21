@@ -46,7 +46,7 @@ static inline void togglebit128(BitField128 field, size_t idx)
 
 static inline bool isbitset128(BitField128 field, size_t idx)
 {
-  return field[idx / CHAR_BIT] & (1u << (idx % CHAR_BIT));
+  return (field[idx / CHAR_BIT] & (1u << (idx % CHAR_BIT)));
 }
 
 #define MAXNOTES 8

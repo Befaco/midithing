@@ -35,8 +35,9 @@ void MIDICV::ProcessNoteOn(byte pitch, byte velocity)
   PrintNotes();
 #endif
 
-  if (nNotesOn >= MAXNOTES) return; // as fast as possible
-
+  if (nNotesOn >= MAXNOTES) {
+    return;                         // as fast as possible
+  }
   // Add a new note to the note on list
   // First check if already in the list (should not happen, but...)
   // If not repeated, increase pressed key counter and store it
@@ -70,8 +71,9 @@ void MIDICV::ProcessNoteOff(byte pitch, byte velocity)
   PrintNotes();
 #endif
 
-  if (!nNotesOn) return; // as fast as possible
-
+  if (!nNotesOn) {
+    return;              // as fast as possible
+  }
   // First check if the note off is in the list
   int repeat;
   repeat = CheckRepeat(pitch);

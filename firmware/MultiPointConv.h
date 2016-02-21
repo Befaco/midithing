@@ -37,7 +37,7 @@ public:
   {
     // Default to 12 bits in the CV for 127 MIDI values;
     minInput = 0;
-    rangeInput = 127;
+    rangeInput = 127; // actually range-1
     minDAC = 0;
     rangeDAC = 4095;
   }
