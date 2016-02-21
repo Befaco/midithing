@@ -67,5 +67,6 @@ public:
   }
   // Make conversion
   unsigned int intervalConvert(int inp);
+  unsigned int intervalConvertF(float inp);
   byte Processnote(byte channel, byte pitch, byte velocity);
 };

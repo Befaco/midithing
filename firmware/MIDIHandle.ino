@@ -135,6 +135,9 @@ void HandleControlChange(byte channel, byte number, byte value)
   case 1:
     ChanMIDI[MIDIactive].ProcessModul(value);
     break; // Handle only CC #1 = Modulation
+  case 65:
+    ChanMIDI[MIDIactive].ProcessPortaOnOff(value);
+    break;
   case 123:
     for (int i = 0; i < MAXNumMIDI; i++) {
       ChanMIDI[i].playNoteOff(); // All notes off received

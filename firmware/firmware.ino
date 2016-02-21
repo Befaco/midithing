@@ -243,6 +243,11 @@ void loop()
 
   MIDI.read();
 
+  // handle any ramps
+  for (int i = 0; i < 4; i++) {
+    ChanMIDI[i].Run();
+  }
+
   // handle blinks
   blink.playBlink();
   for (int i = 0; i < 10; i++) {

@@ -69,6 +69,50 @@ unsigned int MultiPointConv::intervalConvert(int inp)
   return (outp);
 }
 
+unsigned int MultiPointConv::intervalConvertF(float inp)
+{
+  float val = inp - minInput; // Adjust learnt zero value
+  if (val < 0) {
+    val = 0;
+  }
+  if (val > 119) {
+    val = 119;  // max 10 oct. = 120 notes
+  }
+
+  // Look for interval
+  int interv = (int)val / 6;
+  if (interv > 19) {
+    interv = 19;
+  }
+  int A = DACPoints[interv];   //low output interpolation point
+  int B = DACPoints[interv + 1]; //high output interpolation point
+
+  // get value
+  unsigned int outp = (int)(A + (val - interv * 6.) * (B - A) / 6.);
+  if (outp < 0) {
+    outp = 0;
+  } else if (outp > 4095) {
+    outp = 4095;
+  }
+#ifdef PRINTDEBUG
+  Serial.print("Int: ");
+  Serial.print(interv);
+  Serial.print(" Low Int: ");
+  Serial.print(A);
+  Serial.print(" High Int: ");
+  Serial.println(B);
+
+  Serial.print("Note Input: ");
+  Serial.print(val);
+  Serial.print("/");
+  Serial.print(inp);
+  Serial.print(" DAC Output: ");
+  Serial.println(outp);
+#endif
+  return (outp);
+}
+
+// used in calibration
 byte MultiPointConv::Processnote(byte channel, byte pitch, byte velocity)
 {
   LearnInitTime = millis(); // Reset calibration counter

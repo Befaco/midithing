@@ -57,6 +57,13 @@ public:
   byte velocity;
 };
 
+struct NoteRamp {
+public:
+  bool onoff = false;
+  float goal = 0;
+  float current = 0;
+};
+
 class MIDICV
 {
 //////////////////////////////////////////////
@@ -68,6 +75,7 @@ public:
   NoteEvent NotesOn[MAXNOTES];
   byte nNotesOn = 0; // Number of notes on
   byte pinGATE = 2;
+  NoteRamp ramp;
   // Var MIDI-DAC
   class MultiPointConv *PitchDAC, *VelDAC, *BendDAC, *ModulDAC;
 
@@ -80,6 +88,7 @@ public:
   void ProcessNoteOff(byte pitch, byte velocity);
   void ProcessBend(int bend);
   void ProcessModul(byte value);
+  void ProcessPortaOnOff(byte value);
 #ifdef PRINTDEBUG
   void PrintNotes(void);
 #endif
@@ -87,4 +96,5 @@ public:
   void playNote(byte note, byte plvelocity);
   void playNoteOff(void);
   void LearnThis(byte channel, byte pitch, byte velocity);
+  void Run();
 };

@@ -157,6 +157,11 @@ void MIDICV::ProcessModul(byte value)
   sendvaltoDAC(ModulDAC->DACnum, voltage);
 }
 
+void MIDICV::ProcessPortaOnOff(byte value)
+{
+  ramp.onoff = (value >= 64) ? true : false;
+}
+
 #ifdef PRINTDEBUG
 void MIDICV::PrintNotes(void)
 {
@@ -190,11 +195,8 @@ void MIDICV::playNote(byte note, byte plvelocity)
   unsigned int voltage2 = 0;
 
   if (PitchDAC != NULL) {
-    voltage = PitchDAC->intervalConvert(note);
-    if (voltage > 4095) {
-      voltage = 4095;
-    }
-    sendvaltoDAC(PitchDAC->DACnum, voltage);
+    ramp.goal = (float)note;
+    Run(); // handle ramps and voltage output
   }
 
   if (VelDAC != NULL) {
@@ -253,6 +255,35 @@ void MIDICV::LearnThis(byte channel, byte pitch, byte velocity)
     // Store value in EEPROM
     WriteMIDIeeprom();
   }
+}
+
+void MIDICV::Run()
+{
+  static float rampFactor = 0.99;
+  static float oneMinusRampFactor = 1.0 - rampFactor;
+
+  if (LearnMode == NORMALMODE) {
+    if (ramp.current == ramp.goal) {
+      return;
+    }
+
+    if (ramp.onoff) {
+      ramp.current = (ramp.goal * oneMinusRampFactor) + (ramp.current * rampFactor);
+      if (fabs(ramp.current - ramp.goal) < 0.01) {
+        ramp.current = ramp.goal;
+      }
+    } else {
+      ramp.current = ramp.goal;
+    }
+  } else {
+    ramp.current = ramp.goal;
+  }
+
+  int voltage = PitchDAC->intervalConvertF(ramp.current);
+  if (voltage > 4095) {
+    voltage = 4095;
+  }
+  sendvaltoDAC(PitchDAC->DACnum, voltage);
 }
 
 ///////////////////////////////////
