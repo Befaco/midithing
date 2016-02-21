@@ -243,11 +243,6 @@ void loop()
 
   MIDI.read();
 
-  // handle any glides
-  for (int i = 0; i < 4; i++) {
-    ChanMIDI[i].Glide();
-  }
-
   // handle blinks
   blink.playBlink();
   for (int i = 0; i < 10; i++) {
