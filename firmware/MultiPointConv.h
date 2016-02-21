@@ -44,7 +44,7 @@ public:
   // Make conversion
   unsigned int linealConvert(int inp)
   {
-    return (minDAC + ((long)(inp - minInput) * rangeDAC) / rangeInput);
+    return (round(minDAC + ((inp - minInput) * rangeDAC) / (float)rangeInput));
   }
 };
 
@@ -62,7 +62,7 @@ public:
     minDAC = 0;
     rangeDAC = 4095;
     for (int i = 0; i < 21; i++) {
-      DACPoints[i] = i * 204.75;  //4095/20;
+      DACPoints[i] = round(i * 204.75);  //4095/20;
     }
   }
   // Make conversion
