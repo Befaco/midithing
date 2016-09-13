@@ -49,6 +49,11 @@ static inline bool isbitset128(BitField128 field, size_t idx)
   return field[idx / CHAR_BIT] & (1u << (idx % CHAR_BIT));
 }
 
+static inline void clearbitset128(BitField128 field)
+{
+  memset(field, 0, sizeof(BitField128));
+}
+
 #define MAXNOTES 8
 
 struct NoteEvent {
@@ -57,6 +62,62 @@ public:
   byte velocity;
 };
 
+struct NoteEventInfo {
+  bool isPlaying(byte pitch) {
+    return isbitset128(noteField_, (size_t)pitch);
+  }
+
+  byte setPlaying(byte pitch, byte velocity) {
+    if (velocity) {
+      setbit128(noteField_, (size_t)pitch);
+      events_[count_++] = { pitch, velocity };
+    }
+    else {
+      unsetbit128(noteField_, (size_t)pitch);
+      // Remove note from the list and play the last active note
+      for (int i = 0; i < count_; i++) {
+        if (events_[i].pitch == pitch) {
+          while (i < count_) {
+            events_[i] = events_[i + 1];
+            i++;
+          }
+          break;
+        }
+      }
+      count_--;
+    }
+    return count_;
+  }
+
+  byte getCount() { return count_; }
+
+  bool getEvent(byte idx, byte* pitch, byte* velocity) {
+    if (!count_) {
+      *pitch = 0;
+      *velocity = 0;
+      return false;
+    }
+    *pitch = events_[idx].pitch;
+    *velocity = events_[idx].velocity;
+    return true;
+  }
+
+  bool getLastEvent(byte* pitch, byte* velocity) {
+    return getEvent(count_ - 1, pitch, velocity);
+  }
+
+  void clear() {
+    count_ = 0;
+    clearbitset128(noteField_);
+  }
+
+ private:
+  byte count_ = 0;
+  BitField128 noteField_ = {0}; // more efficient than iterating list
+  NoteEvent events_[MAXNOTES] = {};
+};
+
+
 class MIDICV
 {
 //////////////////////////////////////////////
@@ -64,10 +125,8 @@ class MIDICV
 public:
   // Var MIDI
   byte midiChannel = 1; // Initial channel
-  BitField128 playingNotes = {0}; // more efficient than iterating list
-  NoteEvent NotesOn[MAXNOTES];
-  byte nNotesOn = 0; // Number of notes on
   byte pinGATE = 2;
+  NoteEventInfo notes;
   // Var MIDI-DAC
   class MultiPointConv *PitchDAC, *VelDAC, *BendDAC, *ModulDAC;
 

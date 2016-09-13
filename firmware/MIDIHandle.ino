@@ -138,7 +138,7 @@ void HandleControlChange(byte channel, byte number, byte value)
   case 123:
     for (int i = 0; i < MAXNumMIDI; i++) {
       ChanMIDI[i].playNoteOff(); // All notes off received
-      ChanMIDI[i].nNotesOn = 0; // 0 notes on
+      ChanMIDI[i].notes.clear(); // 0 notes on
     }
 #ifdef PRINTDEBUG
     Serial.println("All Notes Off");

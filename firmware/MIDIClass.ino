@@ -35,7 +35,7 @@ void MIDICV::ProcessNoteOn(byte pitch, byte velocity)
   PrintNotes();
 #endif
 
-  if (nNotesOn >= MAXNOTES) return; // as fast as possible
+  if (notes.getCount() >= MAXNOTES) return; // as fast as possible
 
   // Add a new note to the note on list
   // First check if already in the list (should not happen, but...)
@@ -43,15 +43,13 @@ void MIDICV::ProcessNoteOn(byte pitch, byte velocity)
   int repeat = CheckRepeat(pitch);
   char newnote = 0;
   if (!repeat) {
-    setbit128(playingNotes, pitch);
-    NotesOn[nNotesOn] = { pitch, velocity };
-    nNotesOn++;
+    notes.setPlaying(pitch, velocity);
     newnote = 1;
   }
 #ifdef PRINTDEBUG
   Serial.print(repeat);
   Serial.print(" rep / Notes On: ");
-  Serial.println(nNotesOn);
+  Serial.println(notes.getCount());
   PrintNotes();
 #endif
   // If not repeated Play the note
@@ -70,7 +68,7 @@ void MIDICV::ProcessNoteOff(byte pitch, byte velocity)
   PrintNotes();
 #endif
 
-  if (!nNotesOn) return; // as fast as possible
+  if (!notes.getCount()) return; // as fast as possible
 
   // First check if the note off is in the list
   int repeat;
@@ -81,32 +79,22 @@ void MIDICV::ProcessNoteOff(byte pitch, byte velocity)
 #endif
     return; // Note on for received note off not found
   }
-  unsetbit128(playingNotes, pitch);
-  if (nNotesOn == 1) {
-    // Last note, play note off
-    nNotesOn = 0;
+  if (!notes.setPlaying(pitch, 0)) {
     playNoteOff(); //Leaving Pitch and velocity value and Gate down
 #ifdef PRINTDEBUG
     Serial.print(" Last Note Off: ");
     Serial.println(pitch);
 #endif
-  } else {
-    // Remove note from the list and play the last active note
-    for (int i = 0; i < nNotesOn; i++) {
-      if (NotesOn[i].pitch == pitch) {
-        while (i < nNotesOn) {
-          NotesOn[i] = NotesOn[i + 1];
-          i++;
-        }
-        break;
-      }
+  }
+  else {
+    byte lastPitch, lastVelocity;
+    if (notes.getLastEvent(&lastPitch, &lastVelocity)) {
+      playNote(lastPitch, lastVelocity);
     }
-    nNotesOn--; // Decrease # of active notes
-    playNote(NotesOn[nNotesOn - 1].pitch, NotesOn[nNotesOn - 1].velocity);
 #ifdef PRINTDEBUG
     Serial.print(repeat);
     Serial.print(" rep / Notes On: ");
-    Serial.println(nNotesOn);
+    Serial.println(notes.getCount());
     PrintNotes();
 #endif
   }
@@ -160,10 +148,12 @@ void MIDICV::ProcessModul(byte value)
 #ifdef PRINTDEBUG
 void MIDICV::PrintNotes(void)
 {
-  for (int i = 0; i < nNotesOn; i++) {
-    Serial.print(NotesOn[i].pitch);
+  for (int i = 0; i < notes.getCount(); i++) {
+    byte pitch, velocity;
+    notes.getEvent(i, &pitch, &velocity);
+    Serial.print(pitch);
     Serial.print("/");
-    Serial.print(NotesOn[i].velocity);
+    Serial.print(velocity);
     Serial.print(" ");
   }
   Serial.println(" ");
@@ -173,11 +163,11 @@ void MIDICV::PrintNotes(void)
 // Check if the note is in the list and return position
 byte MIDICV::CheckRepeat(byte pitch)
 {
-  if (nNotesOn < 1) {
+  if (notes.getCount() < 1) {
     return (0);
   }
 
-  if (isbitset128(playingNotes, pitch)) {
+  if (notes.isPlaying(pitch)) {
     return (1);
   }
   return (0);
@@ -239,7 +229,7 @@ void MIDICV::LearnThis(byte channel, byte pitch, byte velocity)
   Serial.println(" Step, End Learn Mode");
 #endif
   LearnInitTime = millis();
-  nNotesOn = 0;
+  notes.clear();
 
   // Go to next channel learn step.
   if (LearnStep < MAXNumMIDI - 1 && LearnStep < 3) {
@@ -303,7 +293,7 @@ void AllNotesOff(void)
 {
   for (int i = 0; i < MAXNumMIDI; i++) {
     ChanMIDI[i].playNoteOff();
-    ChanMIDI[i].nNotesOn = 0;
+    ChanMIDI[i].notes.clear();
   }
 }
 
