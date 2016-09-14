@@ -103,6 +103,21 @@ public:
     return count_;
   }
 
+  byte setPlayingFront(byte pitch, byte velocity) {
+    if (velocity) {
+      if (!isbitset128(noteField_, (size_t)pitch)) {
+        setbit128(noteField_, (size_t)pitch);
+        for (int i = count_ - 1; i >= 0; i--) {
+          events_[i + 1] = events_[i];
+        }
+        events_[0] = { pitch, velocity };
+        count_++;
+      }
+      return count_;
+    }
+    else return setPlaying(pitch, velocity);
+  }
+
   byte getCount() { return count_; }
 
   bool getEvent(byte idx, byte* pitch, byte* velocity = nullptr) {
@@ -164,16 +179,6 @@ public:
 class VoiceSelector {
 public:
 
-  void addToPool(byte pitch)
-  {
-    pool_.setPlaying(pitch, 64);
-  }
-
-  void removeFromPool(byte pitch)
-  {
-    pool_.setPlaying(pitch, 0);
-  }
-
   void addToPlaying(byte pitch)
   {
     playing_.setPlaying(pitch, 64);
@@ -190,7 +195,7 @@ public:
     pool_.clear();
   }
 
-  bool getNextNoteInPool(byte* pitch, byte* velocity = nullptr)
+  bool popNextNoteFromPool(byte* pitch, byte* velocity = nullptr)
   {
     int poolCount = pool_.getCount();
     byte nextNote = 0;
@@ -202,10 +207,12 @@ public:
     switch (MIDImode) {
       case POLYFIRST:
         pool_.getEvent(0, pitch);
+        removeFromPool(*pitch);
         return true;
         break;
       case POLYLAST:
         pool_.getLastEvent(pitch);
+        removeFromPool(*pitch);
         return true;
         break;
       case POLYHIGH:
@@ -218,6 +225,7 @@ public:
           }
         }
         *pitch = nextNote;
+        removeFromPool(*pitch);
         return true;
         break;
       case POLYLOW:
@@ -230,6 +238,7 @@ public:
           }
         }
         *pitch = nextNote;
+        removeFromPool(*pitch);
         return true;
         break;
       default:
@@ -260,6 +269,21 @@ public:
   }
 
 private:
+
+  void addToPool(byte pitch)
+  {
+    pool_.setPlaying(pitch, 64);
+  }
+
+  void addToPoolFront(byte pitch)
+  {
+    pool_.setPlayingFront(pitch, 64);
+  }
+
+  void removeFromPool(byte pitch)
+  {
+    pool_.setPlaying(pitch, 0);
+  }
 
   int getPolyLowTarget(byte channel, byte pitch, byte velocity)
   {
@@ -355,7 +379,7 @@ private:
 
     if (oldestChannel >= 0) {
       ChanMIDI[oldestChannel].ProcessNoteOff(oldestPitch, 0); // TODO: verify that there's only one note per channel in this mode
-      addToPool(oldestPitch);
+      addToPoolFront(oldestPitch);
       playing_.setPlaying(oldestPitch, 0);
       return oldestChannel;
     }

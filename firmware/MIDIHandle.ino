@@ -105,8 +105,8 @@ void HandleNoteOff(byte channel, byte pitch, byte velocity)
 
   ChanMIDI[MIDIactive].ProcessNoteOff(pitch, velocity);
   Selector.removeFromPlaying(pitch);
-  if (Selector.getNextNoteInPool(&pitch)) {
-    Selector.removeFromPool(pitch);
+  if (Selector.popNextNoteFromPool(&pitch)) {
+    // in POLYLATEST, the order of "latest note" is changing TODO
     ChanMIDI[MIDIactive].ProcessNoteOn(pitch, 64);
     Selector.addToPlaying(pitch);
   }

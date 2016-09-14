@@ -37,7 +37,7 @@
 
 // MIDI Modes
 enum MIDImodes {
-  INVALID = 0,
+  MIDIMODE_INVALID = 0,
   MONOMIDI = 1,
   DUALMIDI,
   QUADMIDI,

@@ -302,7 +302,7 @@ int ReadMIDIeeprom(void)
   if (numMIDI < 1 || numMIDI > 4) {
     return (-1);
   }
-  if (modeMIDI < MONOMIDI || modeMIDI > PERCGATE) {
+  if (modeMIDI <= MIDIMODE_INVALID || modeMIDI >= MIDIMODE_LAST) {
     return (-1);
   }
 
