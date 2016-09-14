@@ -128,26 +128,45 @@ byte CalProcessNote(byte channel, byte pitch, byte velocity)
   } else if (channel == 5) {
     // Channel 5 for setting modes
     switch (pitch) {
-    case 0:
+    case 0: // C
       SetModeMIDI(MONOMIDI);
       return (1);
       break;
-    case 2:
+    case 2: // D
       SetModeMIDI(DUALMIDI);
       return (1);
       break;
-    case 4:
+    case 4: // E
       SetModeMIDI(QUADMIDI);
       return (1);
       break;
-    case 5:
+    case 5: // F
       SetModeMIDI(PERCTRIG);
       return (1);
       break;
-      /*case 6:
-         SetModeMIDI(PERCGATE);
-         break;
-       */
+  /*
+    case 6:
+      SetModeMIDI(PERCGATE);
+      break;
+  */
+    case 7: // G
+      SetModeMIDI(POLYFIRST);
+      return (1);
+      break;
+    case 9: // A
+      SetModeMIDI(POLYLAST);
+      return (1);
+      break;
+    case 11: // B
+      SetModeMIDI(POLYHIGH);
+      return (1);
+      break;
+    case 12: // C'
+      SetModeMIDI(POLYLOW);
+      return (1);
+      break;
+    default:
+      return (0);
     }
   }
   return (0);

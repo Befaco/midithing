@@ -44,6 +44,9 @@ public:
   void setBlink(unsigned long periodon, unsigned long periodoff, int times, int newpin = -1);
   void playBlink(void);
 };
+
+extern Blinker gates[10]; // Gates triggers
+
 /*
    // Blink a double color two	pin LED
    class DualBlinker: public Blinker{

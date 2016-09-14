@@ -25,103 +25,13 @@
 // -----------------------------------------------------------------------------
 //
 
-//#define PRINTDEBUG 1// if defined, send debug info to the serial interface
-//#define USETIMER  // if defined, use timer functions
-#define CALIBRATION 1
-#define STARTSTOPCONT // if defined, handle start/stop/continue
-
-#include <Bounce2.h> // Button debouncer
-#include <EEPROM.h>
-#include <MIDI.h> // MIDI library
-#include <Wire.h> //  I2C Comm
-#include <mcp4728.h> // MCP4728 library
-//#include "EEPROMAnything.h"
+#include "firmware.h"
 #include "Blinker.h"
 #include "MIDIClass.h"
 #include "MultiPointConv.h"
-#include <avr/eeprom.h>
-
-// Input / output definitions
-// DAC Ports
-#define PITCHCV 0
-#define VELOC 1
-#define MODUL 2
-#define BEND 3
-// In/Out pins
-#define PINGATE 2
-#define PINGATE2 3
-#define PINGATE3 4
-#define PINGATE4 5
-#define PINCLOCK 6
-#define PINLEARN 7
-#define PINLED2 9
-#define PINSTARTSTOP 10
-#define PINLED 13
-
-// Learn Mode
-#define NORMALMODE 0
-#define ENTERLEARN 1
-#define ENTERCAL 2
-
-// MIDI Modes
-#define MONOMIDI 1
-#define DUALMIDI 2
-#define QUADMIDI 4
-#define PERCTRIG 5
-#define PERCGATE 6
-
-//
-#define TRIGPERCUSSION 60 // Width of trigger for percussions
-#define TRIGCLOCK 60 // Width of trigger for Clock
-#define TRIGSTART 60// Width of trigger for Start/Continue
-
-//////////////////////////////////////////////
-// Function declaration
-// DAC
-void  sendvaltoDAC(unsigned int port, unsigned int val);
-//MIDI Handles
-void HandleNoteOn(byte channel, byte pitch, byte velocity);
-void HandleNoteOff(byte channel, byte pitch, byte velocity);
-void HandlePitchBend(byte channel, int bend);
-void HandleControlChange(byte channel, byte number, byte value);
-#ifdef STARTSTOPCONT
-void HandleStart(void);
-void HandleContinue(void);
-void HandleStop(void);
-#endif
-void HandleClock(void);
-//MIDI
-int CheckActiveMIDI(byte channel, byte pitch = 0);
-void AllNotesOff(void);
-int ReadMIDIeeprom(void);
-void WriteMIDIeeprom(void);
-void SetModeMIDI(int mode);
-//void playNote(byte note, byte plvelocity);
-//void playNoteOff(void);
-// Learn mode
-void DoLearnCycle(void);
-void EnterLearnMode(void);
-// Calibration mode
-void DoCalCycle(void);
-void EnterCalMode(void);
-void EndCalMode(void);
-byte CalProcessNote(byte channel, byte pitch, byte velocity);
-
-// Timer functions
-#ifdef USETIMER
-void SetupTimer(unsigned int compTimer1);
-#endif
 
 //////////////////////////////////////////////
 //Variables
-//MIDI
-MIDICV ChanMIDI[4]; // Define up to four MIDI channels
-int MAXNumMIDI = 0; // Number of MIDI channels in use
-byte MIDIRun = 0; // Set to 0 to init in stop condition
-int MIDImode = QUADMIDI; // MIDI mode Set to quad mode by default
-Blinker gates[10]; // Gates triggers
-int countCLOCK = 1;
-int ppqnCLOCK = 24;
 
 // Var I2C DAC
 mcp4728 dac = mcp4728(0); // instantiate mcp4728 object, Device ID = 0
@@ -134,6 +44,7 @@ byte LearnStep = 0;
 
 // Var Blinker
 Blinker blink((byte)PINLED);
+Blinker gates[10];
 
 Bounce bouncer = Bounce(); // will be configured in setup()
 unsigned long bouncerLastTime = 0;
@@ -221,7 +132,7 @@ void setup()
     // Set Mode manually
     //SetModeMIDI(MONOMIDI);
     //SetModeMIDI(DUALMIDI);
-    SetModeMIDI(QUADMIDI);
+    SetModeMIDI(POLYFIRST);
     //SetModeMIDI(PERCTRIG);
   }
 

@@ -29,6 +29,12 @@
 // MIDI function definitions
 // Play a NOTE to the MCU outputs/DAC
 // Do whatever you want when you receive a Note On.
+
+VoiceSelector Selector;
+static int countCLOCK = 1;
+static int ppqnCLOCK = 24;
+static byte MIDIRun = 0; // Set to 0 to init in stop condition
+
 void HandleNoteOn(byte channel, byte pitch, byte velocity)
 {
   int MIDIactive = -1;
@@ -48,8 +54,8 @@ void HandleNoteOn(byte channel, byte pitch, byte velocity)
   }
 
   // Check if received channel is any active MIDI
-  MIDIactive = CheckActiveMIDI(channel, pitch);
-  if (MIDIactive == -1) {
+  MIDIactive = Selector.getTargetChannel(channel, pitch, velocity);
+  if (MIDIactive == -1) { // no channels available
 #ifdef PRINTDEBUG
     Serial.println("Not active MIDI");
 #endif
@@ -72,6 +78,7 @@ void HandleNoteOn(byte channel, byte pitch, byte velocity)
     blink.setBlink(100, 1, 1, PINLED);  // Blink once every Note ON (not in CAL/LEARN mode)
   }
   ChanMIDI[MIDIactive].ProcessNoteOn(pitch, velocity);
+  Selector.addToPlaying(pitch);
 }
 
 // Do whatever you want when you receive a Note Off.
@@ -84,7 +91,7 @@ void HandleNoteOff(byte channel, byte pitch, byte velocity)
   }
 
   // Check if received channel is any active MIDI
-  MIDIactive = CheckActiveMIDI(channel, pitch);
+  MIDIactive = Selector.getTargetChannel(channel, pitch);
   if (MIDIactive == -1) {
 #ifdef PRINTDEBUG
     Serial.println("Not active MIDI");
@@ -97,6 +104,14 @@ void HandleNoteOff(byte channel, byte pitch, byte velocity)
   }
 
   ChanMIDI[MIDIactive].ProcessNoteOff(pitch, velocity);
+  Selector.removeFromPlaying(pitch);
+  if (Selector.getNextNoteInPool(&pitch)) {
+    Selector.removeFromPool(pitch);
+    ChanMIDI[MIDIactive].ProcessNoteOn(pitch, 64);
+    Selector.addToPlaying(pitch);
+  }
+
+  // if we're in poly mode, we should trigger a new note if anything is waiting in the pool
 }
 
 // Do whatever you want when you receive a Note On.
@@ -109,7 +124,7 @@ void HandlePitchBend(byte channel, int bend)
   }
 
   // Check if received channel is any active MIDI
-  MIDIactive = CheckActiveMIDI(channel);
+  MIDIactive = Selector.getTargetChannel(channel);
   if (MIDIactive == -1) {
     return;  // received channel not any active MIDI
   }
@@ -126,7 +141,7 @@ void HandleControlChange(byte channel, byte number, byte value)
     return;  // Do not process while in Learn Mode
   }
   // Check if received channel is any active MIDI
-  MIDIactive = CheckActiveMIDI(channel);
+  MIDIactive = Selector.getTargetChannel(channel);
   if (MIDIactive == -1) {
     return;  // received channel not any active MIDI
   }

@@ -25,6 +25,10 @@
 // -----------------------------------------------------------------------------
 //
 
+MIDICV ChanMIDI[4];
+int MAXNumMIDI = 0; // Number of MIDI channels in use
+int MIDImode = QUADMIDI; // MIDI mode Set to quad mode by default
+
 // Actions to perform for Note On
 void MIDICV::ProcessNoteOn(byte pitch, byte velocity)
 {
@@ -40,22 +44,19 @@ void MIDICV::ProcessNoteOn(byte pitch, byte velocity)
   // Add a new note to the note on list
   // First check if already in the list (should not happen, but...)
   // If not repeated, increase pressed key counter and store it
-  int repeat = CheckRepeat(pitch);
-  char newnote = 0;
-  if (!repeat) {
+  if (!CheckRepeat(pitch)) {
     notes.setPlaying(pitch, velocity);
-    newnote = 1;
+    playNote(pitch, velocity);
   }
 #ifdef PRINTDEBUG
-  Serial.print(repeat);
+  else {
+    Serial.print("repeat");
+  }
+
   Serial.print(" rep / Notes On: ");
   Serial.println(notes.getCount());
   PrintNotes();
 #endif
-  // If not repeated Play the note
-  if (newnote) {
-    playNote(pitch, velocity);
-  }
 }
 
 // Actions to perform for Note Off
@@ -248,22 +249,6 @@ void MIDICV::LearnThis(byte channel, byte pitch, byte velocity)
 ///////////////////////////////////
 // Support functions for MIDI class
 
-// Check if received channel is any active MIDI
-int CheckActiveMIDI(byte channel, byte pitch)
-{
-  // If in percussion mode, check the note and return the associated gate
-  if ((MIDImode == PERCTRIG || MIDImode == PERCGATE) && channel == 10) {
-    return (PercussionNoteGate(pitch));
-  }
-  // In other modes, check if received one is an active channel
-  for (int i = 0; i < MAXNumMIDI; i++) {
-    if (ChanMIDI[i].midiChannel == channel && ChanMIDI[i].PitchDAC->minInput < pitch) {
-      return (i);
-    }
-  }
-  return (-1);
-}
-
 // Check percussion notes and return associated gate
 int PercussionNoteGate(byte pitch)
 {
@@ -406,6 +391,8 @@ void WriteMIDIeeprom(void)
 // Set default MIDI properties manually
 void SetModeMIDI(int mode)
 {
+  if (MIDImode >= MIDIMODE_LAST) return;
+
   MIDImode = mode;
   // Reset pointers
   for (int i = 0; i < 4; i++) {
@@ -416,6 +403,8 @@ void SetModeMIDI(int mode)
     ChanMIDI[i].pinGATE = -1;
     ChanMIDI[i].midiChannel = 0;
   }
+  Selector.clear();
+
   switch (mode) {
   case MONOMIDI:
     MAXNumMIDI = 1;
@@ -456,6 +445,24 @@ void SetModeMIDI(int mode)
     ChanMIDI[3].PitchDAC = &DACConv[3];
     ChanMIDI[3].pinGATE = PINGATE4;
     ChanMIDI[3].midiChannel = 4;
+    break;
+  case POLYFIRST:
+  case POLYLAST:
+  case POLYHIGH:
+  case POLYLOW:
+    MAXNumMIDI = 4;
+    ChanMIDI[0].PitchDAC = &DACConv[0];
+    ChanMIDI[0].pinGATE = PINGATE;
+    ChanMIDI[0].midiChannel = 1;
+    ChanMIDI[1].PitchDAC = &DACConv[1];
+    ChanMIDI[1].pinGATE = PINGATE2;
+    ChanMIDI[1].midiChannel = 1;
+    ChanMIDI[2].PitchDAC = &DACConv[2];
+    ChanMIDI[2].pinGATE = PINGATE3;
+    ChanMIDI[2].midiChannel = 1;
+    ChanMIDI[3].PitchDAC = &DACConv[3];
+    ChanMIDI[3].pinGATE = PINGATE4;
+    ChanMIDI[3].midiChannel = 1;
     break;
   case PERCTRIG:
     break;

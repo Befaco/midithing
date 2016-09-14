@@ -26,35 +26,44 @@
 //
 // bitfield implementation adapted from
 // http://stackoverflow.com/questions/1590893/error-trying-to-define-a-1-024-bit-128-byte-bit-field
+
 #include <limits.h>
-typedef byte BitField128[16]; // 128 bits
+#include "firmware.h"
+#include "MultiPointConv.h"
+#include "BitField128.h"
 
-static inline void setbit128(BitField128 field, size_t idx)
-{
-  field[idx / CHAR_BIT] |= 1u << (idx % CHAR_BIT);
-}
+void AllNotesOff(void);
+int ReadMIDIeeprom(void);
+void WriteMIDIeeprom(void);
+void SetModeMIDI(int mode);
+// Learn mode
+void DoLearnCycle(void);
+void EnterLearnMode(void);
+// Calibration mode
+void DoCalCycle(void);
+void EnterCalMode(void);
+void EndCalMode(void);
+byte CalProcessNote(byte channel, byte pitch, byte velocity);
+int PercussionNoteGate(byte pitch);
 
-static inline void unsetbit128(BitField128 field, size_t idx)
-{
-  field[idx / CHAR_BIT] &= ~(1u << (idx % CHAR_BIT));
-}
-
-static inline void togglebit128(BitField128 field, size_t idx)
-{
-  field[idx / CHAR_BIT] ^= 1u << (idx % CHAR_BIT);
-}
-
-static inline bool isbitset128(BitField128 field, size_t idx)
-{
-  return field[idx / CHAR_BIT] & (1u << (idx % CHAR_BIT));
-}
-
-static inline void clearbitset128(BitField128 field)
-{
-  memset(field, 0, sizeof(BitField128));
-}
+//MIDI
+class MIDICV;
+extern MIDICV ChanMIDI[4]; // Define up to four MIDI channels
+extern int MAXNumMIDI; // Number of MIDI channels in use
+extern int MIDImode; // MIDI mode Set to quad mode by default
 
 #define MAXNOTES 8
+
+static bool IsPolyMode() {
+  return (MIDImode == POLYFIRST
+          || MIDImode == POLYLAST
+          || MIDImode == POLYHIGH
+          || MIDImode == POLYLOW);
+}
+
+static bool IsPercMode() {
+  return (MIDImode == PERCTRIG || MIDImode == PERCGATE);
+}
 
 struct NoteEvent {
 public:
@@ -62,47 +71,52 @@ public:
   byte velocity;
 };
 
-struct NoteEventInfo {
+class NoteEventInfo {
+public:
   bool isPlaying(byte pitch) {
     return isbitset128(noteField_, (size_t)pitch);
   }
 
   byte setPlaying(byte pitch, byte velocity) {
     if (velocity) {
-      setbit128(noteField_, (size_t)pitch);
-      events_[count_++] = { pitch, velocity };
+      if (!isbitset128(noteField_, (size_t)pitch)) {
+        setbit128(noteField_, (size_t)pitch);
+        events_[count_++] = { pitch, velocity };
+      }
     }
     else {
-      unsetbit128(noteField_, (size_t)pitch);
-      // Remove note from the list and play the last active note
-      for (int i = 0; i < count_; i++) {
-        if (events_[i].pitch == pitch) {
-          while (i < count_) {
-            events_[i] = events_[i + 1];
-            i++;
+      if (isbitset128(noteField_, (size_t)pitch)) {
+        unsetbit128(noteField_, (size_t)pitch);
+        // Remove note from the list
+        for (int i = 0; i < count_; i++) {
+          if (events_[i].pitch == pitch) {
+            while (i < count_) {
+              events_[i] = events_[i + 1];
+              i++;
+            }
+            break;
           }
-          break;
         }
+        count_--;
       }
-      count_--;
     }
     return count_;
   }
 
   byte getCount() { return count_; }
 
-  bool getEvent(byte idx, byte* pitch, byte* velocity) {
-    if (!count_) {
+  bool getEvent(byte idx, byte* pitch, byte* velocity = nullptr) {
+    if (!count_ || idx >= count_) {
       *pitch = 0;
-      *velocity = 0;
+      if (velocity) *velocity = 0;
       return false;
     }
     *pitch = events_[idx].pitch;
-    *velocity = events_[idx].velocity;
+    if (velocity) *velocity = events_[idx].velocity;
     return true;
   }
 
-  bool getLastEvent(byte* pitch, byte* velocity) {
+  bool getLastEvent(byte* pitch, byte* velocity = nullptr) {
     return getEvent(count_ - 1, pitch, velocity);
   }
 
@@ -111,30 +125,28 @@ struct NoteEventInfo {
     clearbitset128(noteField_);
   }
 
- private:
+private:
   byte count_ = 0;
   BitField128 noteField_ = {0}; // more efficient than iterating list
   NoteEvent events_[MAXNOTES] = {};
 };
 
+class MIDICV {
 
-class MIDICV
-{
 //////////////////////////////////////////////
 //Variables
 public:
   // Var MIDI
   byte midiChannel = 1; // Initial channel
-  byte pinGATE = 2;
+  byte pinGATE = PINGATE;
   NoteEventInfo notes;
   // Var MIDI-DAC
   class MultiPointConv *PitchDAC, *VelDAC, *BendDAC, *ModulDAC;
 
 //////////////////////////////////////////////
 // Function declaration
-  MIDICV()
-  {
-  }
+  MIDICV() {}
+
   void ProcessNoteOn(byte pitch, byte velocity);
   void ProcessNoteOff(byte pitch, byte velocity);
   void ProcessBend(int bend);
@@ -146,4 +158,256 @@ public:
   void playNote(byte note, byte plvelocity);
   void playNoteOff(void);
   void LearnThis(byte channel, byte pitch, byte velocity);
+  bool isPlayingNote(byte pitch) { return notes.isPlaying(pitch); }
 };
+
+class VoiceSelector {
+public:
+
+  void addToPool(byte pitch)
+  {
+    pool_.setPlaying(pitch, 64);
+  }
+
+  void removeFromPool(byte pitch)
+  {
+    pool_.setPlaying(pitch, 0);
+  }
+
+  void addToPlaying(byte pitch)
+  {
+    playing_.setPlaying(pitch, 64);
+  }
+
+  void removeFromPlaying(byte pitch)
+  {
+    playing_.setPlaying(pitch, 0);
+  }
+
+  void clear()
+  {
+    playing_.clear();
+    pool_.clear();
+  }
+
+  bool getNextNoteInPool(byte* pitch, byte* velocity = nullptr)
+  {
+    int poolCount = pool_.getCount();
+    byte nextNote = 0;
+
+    *pitch = 0;
+    if (velocity) *velocity = 0;
+
+    if (!poolCount) return false;
+    switch (MIDImode) {
+      case POLYFIRST:
+        pool_.getEvent(0, pitch);
+        return true;
+        break;
+      case POLYLAST:
+        pool_.getLastEvent(pitch);
+        return true;
+        break;
+      case POLYHIGH:
+        nextNote = 0;
+        for (int i = 0; i < poolCount; i++) {
+          byte testNote;
+          pool_.getEvent(i, &testNote);
+          if (testNote > nextNote) {
+            nextNote = testNote;
+          }
+        }
+        *pitch = nextNote;
+        return true;
+        break;
+      case POLYLOW:
+        nextNote = 127;
+        for (int i = 0; i < poolCount; i++) {
+          byte testNote;
+          pool_.getEvent(i, &testNote);
+          if (testNote < nextNote) {
+            nextNote = testNote;
+          }
+        }
+        *pitch = nextNote;
+        return true;
+        break;
+      default:
+        return false;
+    }
+    return false;
+  }
+
+  // Check if received channel is any active MIDI
+  int getTargetChannel(byte channel, byte pitch = 0, byte velocity = 0)
+  {
+    // If in percussion mode, check the note and return the associated gate
+    if (IsPercMode() && channel == 10) {
+      return (PercussionNoteGate(pitch));
+    }
+
+    if (IsPolyMode()) {
+      return getPolyTargetChannel(channel, pitch, velocity);
+    }
+
+    // In other modes, check if received one is an active channel
+    for (int i = 0; i < MAXNumMIDI; i++) {
+      if (ChanMIDI[i].midiChannel == channel && ChanMIDI[i].PitchDAC->minInput < pitch) {
+        return (i);
+      }
+    }
+    return (-1);
+  }
+
+private:
+
+  int getPolyLowTarget(byte channel, byte pitch, byte velocity)
+  {
+    byte highestPitch = 0;
+    byte highestChannel = 0;
+
+    for (int i = 0; i < MAXNumMIDI; i++) {
+      if (ChanMIDI[i].notes.getCount() && ChanMIDI[i].midiChannel == channel) {
+        byte testPitch;
+        ChanMIDI[i].notes.getLastEvent(&testPitch); // should only be one
+        if (testPitch > highestPitch) {
+          highestPitch = testPitch;
+          highestChannel = i;
+        }
+      }
+    }
+
+    if (pitch > highestPitch) {
+      addToPool(pitch);
+      return -1;
+    }
+
+    if (pitch < highestPitch) {
+      ChanMIDI[highestChannel].ProcessNoteOff(highestPitch, 0); // TODO: verify that there's only one note per channel in this mode
+      addToPool(highestPitch);
+      playing_.setPlaying(highestPitch, 0);
+      return highestChannel;
+    }
+
+    addToPool(pitch);
+    return -1; // something went wrong
+  }
+
+  int getPolyHighTarget(byte channel, byte pitch, byte velocity)
+  {
+    byte lowestPitch = 127;
+    byte lowestChannel = 0;
+
+    for (int i = 0; i < MAXNumMIDI; i++) {
+      if (ChanMIDI[i].notes.getCount() && ChanMIDI[i].midiChannel == channel) {
+        byte testPitch;
+        ChanMIDI[i].notes.getLastEvent(&testPitch); // should only be one
+        if (testPitch < lowestPitch) {
+          lowestPitch = testPitch;
+          lowestChannel = i;
+        }
+      }
+    }
+
+    if (pitch < lowestPitch) {
+      addToPool(pitch);
+      return -1;
+    }
+
+    if (pitch > lowestPitch) {
+      ChanMIDI[lowestChannel].ProcessNoteOff(lowestPitch, 0); // TODO: verify that there's only one note per channel in this mode
+      addToPool(lowestPitch);
+      playing_.setPlaying(lowestPitch, 0);
+      return lowestChannel;
+    }
+
+    addToPool(pitch);
+    return -1; // something went wrong
+  }
+
+  int getPolyLastTarget(byte channel, byte pitch, byte velocity)
+  {
+    // get playing_[0]
+    // find the channel playing that pitch
+    // send a noteoff to that channel
+    // move playing_[0] to pool_ (it will be the newest note in pool_)
+    // shift playing_ down
+    // return the channel
+    byte oldestPitch;
+    byte oldestChannel = -1;
+
+    if (!playing_.getEvent(0, &oldestPitch)) {
+      // something went wrong, but let's add it to the pool
+      addToPool(pitch);
+      return -1;
+    }
+
+    for (int i = 0; i < MAXNumMIDI; i++) {
+      if (ChanMIDI[i].midiChannel == channel) {
+        byte testPitch;
+        ChanMIDI[i].notes.getLastEvent(&testPitch); // should only be one
+        if (testPitch == oldestPitch) {
+          oldestChannel = i;
+          break;
+        }
+      }
+    }
+
+    if (oldestChannel >= 0) {
+      ChanMIDI[oldestChannel].ProcessNoteOff(oldestPitch, 0); // TODO: verify that there's only one note per channel in this mode
+      addToPool(oldestPitch);
+      playing_.setPlaying(oldestPitch, 0);
+      return oldestChannel;
+    }
+
+    addToPool(pitch);
+    return -1; // something went wrong
+  }
+
+  int getPolyTargetChannel(byte channel, byte pitch, byte velocity)
+  {
+    // first check all channels for the note
+    for (int i = 0; i < MAXNumMIDI; i++) {
+      if (ChanMIDI[i].midiChannel == channel && ChanMIDI[i].isPlayingNote(pitch)) {
+        return i;
+      }
+    }
+
+    // then look for an empty channel
+    for (int i = 0; i < MAXNumMIDI; i++) {
+      if (ChanMIDI[i].midiChannel == channel && !ChanMIDI[i].notes.getCount()) {
+        return i;
+      }
+    }
+
+    if (!velocity) {
+      removeFromPool(pitch); //cleanup
+      return -1;
+    }
+
+    switch (MIDImode) {
+      case POLYFIRST: // the last-played note is added to the pool, available only if a channel is freed
+        addToPool(pitch);
+        return -1;
+        break;
+      case POLYLAST: // the last-played note replaces the oldest playing note
+        return getPolyLastTarget(channel, pitch, velocity);
+        break;
+      case POLYHIGH:
+        return getPolyHighTarget(channel, pitch, velocity);
+        break;
+      case POLYLOW:
+        return getPolyLowTarget(channel, pitch, velocity);
+        break;
+      default: return -1;
+    }
+    // something went wrong
+    return -1;
+  }
+
+  NoteEventInfo playing_;
+  NoteEventInfo pool_;
+};
+
+extern VoiceSelector Selector;
+

@@ -25,6 +25,9 @@
 // -----------------------------------------------------------------------------
 //
 
+#ifndef __MULTIPOINTCONV_H__
+#define __MULTIPOINTCONV_H__
+
 // Utility class to convert MIDI to CV Range
 // Linear scale input to output (defined as minimun/range)
 class RangeConv
@@ -69,3 +72,5 @@ public:
   unsigned int intervalConvert(int inp);
   byte Processnote(byte channel, byte pitch, byte velocity);
 };
+
+#endif // __MULTIPOINTCONV_H__
