@@ -34,7 +34,7 @@
 //Variables
 
 // Var I2C DAC
-mcp4728 dac = mcp4728(0); // instantiate mcp4728 object, Device ID = 0
+mcp4728 Dac = mcp4728(0); // instantiate mcp4728 object, Device ID = 0
 MultiPointConv DACConv[4];
 
 // Var Learn Mode
@@ -43,11 +43,11 @@ unsigned long LearnInitTime;
 byte LearnStep = 0;
 
 // Var Blinker
-Blinker blink((byte)PINLED);
-Blinker gates[10];
+Blinker Blink((byte)PINLED);
+Blinker Gates[10];
 
-Bounce bouncer = Bounce(); // will be configured in setup()
-unsigned long bouncerLastTime = 0;
+Bounce Bouncer = Bounce(); // will be configured in setup()
+unsigned long BouncerLastTime = 0;
 
 struct MIDISettings : public midi::DefaultSettings {
   static const bool UseRunningStatus = false;
@@ -80,30 +80,30 @@ void setup()
 
   pinMode(PINLEARN, INPUT); // maybe INPUT_PULLUP?
   // Attach the Bounce object with a 50 millisecond debounce time
-  bouncer.attach(PINLEARN);
-  bouncer.interval(50);
+  Bouncer.attach(PINLEARN);
+  Bouncer.interval(50);
   //digitalWrite(PINLEARN, LOW); // Set internal pull down resistor
 
   // DAC MCP4728 init
-  dac.begin();  // initialize i2c interface
-  dac.vdd(5000); // set VDD(mV) of MCP4728 for correct conversion between LSB and Vout
-  dac.setVref(1, 1, 1, 1); // Use internal vref
-  dac.setGain(1, 1, 1, 1); // Use gain x2
+  Dac.begin();  // initialize i2c interface
+  Dac.vdd(5000); // set VDD(mV) of MCP4728 for correct conversion between LSB and Vout
+  Dac.setVref(1, 1, 1, 1); // Use internal vref
+  Dac.setGain(1, 1, 1, 1); // Use gain x2
   for (int i = 0; i < 4; i++) {
     DACConv[i].DACnum = i;
   }
 
   // Init triggers gates
-  gates[0].pinLED = PITCHCV + 128;
-  gates[1].pinLED = VELOC + 128;
-  gates[2].pinLED = MODUL + 128;
-  gates[3].pinLED = BEND + 128;
-  gates[4].pinLED = PINCLOCK;
-  gates[5].pinLED = PINGATE;
-  gates[6].pinLED = PINGATE2;
-  gates[7].pinLED = PINGATE3;
-  gates[8].pinLED = PINGATE4;
-  gates[9].pinLED = PINSTARTSTOP;
+  Gates[0].pinLED = PITCHCV + 128;
+  Gates[1].pinLED = VELOC + 128;
+  Gates[2].pinLED = MODUL + 128;
+  Gates[3].pinLED = BEND + 128;
+  Gates[4].pinLED = PINCLOCK;
+  Gates[5].pinLED = PINGATE;
+  Gates[6].pinLED = PINGATE2;
+  Gates[7].pinLED = PINGATE3;
+  Gates[8].pinLED = PINGATE4;
+  Gates[9].pinLED = PINSTARTSTOP;
 
   //  Init MIDI:
   //Serial.begin(115200);
@@ -130,16 +130,16 @@ void setup()
     Serial.println("No EEPROM Read");
 #endif
     // Set Mode manually
-    //SetModeMIDI(MONOMIDI);
-    //SetModeMIDI(DUALMIDI);
-    SetModeMIDI(POLYFIRST);
-    //SetModeMIDI(PERCTRIG);
+    //SetVoiceMode(MONOMIDI);
+    //SetVoiceMode(DUALMIDI);
+    SetVoiceMode(POLYFIRST);
+    //SetVoiceMode(PERCTRIG);
   }
 
   // LDAC pin must be grounded for normal operation.
   // Reset DAC values to 0 after reset
   delay(50);
-  dac.analogWrite(0, 0, 0, 0);
+  Dac.analogWrite(0, 0, 0, 0);
 
 #ifdef CALIBRATION
   analogReference(INTERNAL);
@@ -155,20 +155,20 @@ void loop()
   MIDI.read();
 
   // handle blinks
-  blink.playBlink();
+  Blink.playBlink();
   for (int i = 0; i < 10; i++) {
-    gates[i].playBlink();
+    Gates[i].playBlink();
   }
 
   // Cal/Learn Button
-  if (bouncer.update()) { // button state changed
+  if (Bouncer.update()) { // button state changed
     unsigned long now = millis();
-    unsigned long bouncerDuration = now - bouncerLastTime;
+    unsigned long bouncerDuration = now - BouncerLastTime;
 
-    bouncerLastTime = now;
+    BouncerLastTime = now;
 
     // Check for learn/cal mode signal
-    if (bouncer.fell()) {
+    if (Bouncer.fell()) {
       // If button pressed during calbration, end calibration
       if (LearnMode == ENTERCAL) {
         EndCalMode();
@@ -199,9 +199,9 @@ void loop()
 //////////////////////////////////////////////
 // DAC function definition
 // Send value val to DAC port
-void  sendvaltoDAC(unsigned int port, unsigned int val)
+void  SendvaltoDAC(unsigned int port, unsigned int val)
 {
-  dac.analogWrite(port, val); // write to input register of a DAC. Channel 0-3, Value 0-4095
+  Dac.analogWrite(port, val); // write to input register of a DAC. Channel 0-3, Value 0-4095
 
 #ifdef PRINTDEBUG
   Serial.print(port);

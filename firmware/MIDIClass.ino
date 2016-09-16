@@ -25,18 +25,18 @@
 // -----------------------------------------------------------------------------
 //
 
-MIDICV ChanMIDI[4];
-int MAXNumMIDI = 0; // Number of MIDI channels in use
-int MIDImode = QUADMIDI; // MIDI mode Set to quad mode by default
+MIDICV Voice[4];
+int NumVoices = 0; // Number of MIDI channels in use
+int VoiceMode = QUADMIDI; // MIDI mode Set to quad mode by default
 
 // Actions to perform for Note On
-void MIDICV::ProcessNoteOn(byte pitch, byte velocity)
+void MIDICV::processNoteOn(byte pitch, byte velocity)
 {
 #ifdef PRINTDEBUG
   Serial.print(pitch);
   Serial.print(" noteon / v ");
   Serial.println(velocity);
-  PrintNotes();
+  printNotes();
 #endif
 
   if (notes.getCount() >= MAXNOTES) return; // as fast as possible
@@ -44,7 +44,7 @@ void MIDICV::ProcessNoteOn(byte pitch, byte velocity)
   // Add a new note to the note on list
   // First check if already in the list (should not happen, but...)
   // If not repeated, increase pressed key counter and store it
-  if (!CheckRepeat(pitch)) {
+  if (!checkRepeat(pitch)) {
     notes.setPlaying(pitch, velocity);
     playNote(pitch, velocity);
   }
@@ -55,24 +55,24 @@ void MIDICV::ProcessNoteOn(byte pitch, byte velocity)
 
   Serial.print(" rep / Notes On: ");
   Serial.println(notes.getCount());
-  PrintNotes();
+  printNotes();
 #endif
 }
 
 // Actions to perform for Note Off
-void MIDICV::ProcessNoteOff(byte pitch)
+void MIDICV::processNoteOff(byte pitch)
 {
 #ifdef PRINTDEBUG
   Serial.print(pitch);
   Serial.print(" noteoff / v ");
-  PrintNotes();
+  printNotes();
 #endif
 
   if (!notes.getCount()) return; // as fast as possible
 
   // First check if the note off is in the list
   int repeat;
-  repeat = CheckRepeat(pitch);
+  repeat = checkRepeat(pitch);
   if (!repeat) {
 #ifdef PRINTDEBUG
     Serial.println("Note on for received note off not found");
@@ -95,21 +95,21 @@ void MIDICV::ProcessNoteOff(byte pitch)
     Serial.print(repeat);
     Serial.print(" rep / Notes On: ");
     Serial.println(notes.getCount());
-    PrintNotes();
+    printNotes();
 #endif
   }
 }
 
 // Actions to perform for Pitch Bend
-void MIDICV::ProcessBend(int bend)
+void MIDICV::processBend(int bend)
 {
   unsigned int voltage = 0;
 
-  if (BendDAC == NULL) {
+  if (bendDAC == NULL) {
     return;
   }
 
-  voltage = BendDAC->linealConvert(bend);
+  voltage = bendDAC->linealConvert(bend);
   if (voltage > 4095) {
     voltage = 0;
   }
@@ -120,18 +120,18 @@ void MIDICV::ProcessBend(int bend)
   Serial.print(" volt: ");
   Serial.println(voltage);
 #endif
-  sendvaltoDAC(BendDAC->DACnum, voltage);
+  SendvaltoDAC(bendDAC->DACnum, voltage);
 }
 
 // Actions to perform for Modulation change
-void MIDICV::ProcessModul(byte value)
+void MIDICV::processMod(byte value)
 {
   unsigned int voltage = 0;
-  if (ModulDAC == NULL) {
+  if (modDAC == NULL) {
     return;
   }
   // Convert to voltage
-  voltage = ModulDAC->linealConvert(value);
+  voltage = modDAC->linealConvert(value);
   if (voltage > 4095) {
     voltage = 0;
   }
@@ -142,11 +142,11 @@ void MIDICV::ProcessModul(byte value)
   Serial.print(" volt: ");
   Serial.println(voltage);
 #endif
-  sendvaltoDAC(ModulDAC->DACnum, voltage);
+  SendvaltoDAC(modDAC->DACnum, voltage);
 }
 
 #ifdef PRINTDEBUG
-void MIDICV::PrintNotes(void)
+void MIDICV::printNotes(void)
 {
   for (int i = 0; i < notes.getCount(); i++) {
     byte pitch, velocity;
@@ -161,7 +161,7 @@ void MIDICV::PrintNotes(void)
 #endif
 
 // Check if the note is in the list and return position
-byte MIDICV::CheckRepeat(byte pitch)
+byte MIDICV::checkRepeat(byte pitch)
 {
   if (notes.getCount() < 1) {
     return (0);
@@ -179,34 +179,34 @@ void MIDICV::playNote(byte note, byte plvelocity)
   unsigned int voltage = 0;
   unsigned int voltage2 = 0;
 
-  if (PitchDAC != NULL) {
-    voltage = PitchDAC->intervalConvert(note);
+  if (pitchDAC != NULL) {
+    voltage = pitchDAC->intervalConvert(note);
     if (voltage > 4095) {
       voltage = 4095;
     }
-    sendvaltoDAC(PitchDAC->DACnum, voltage);
+    SendvaltoDAC(pitchDAC->DACnum, voltage);
   }
 
-  if (VelDAC != NULL) {
-    voltage2 = VelDAC->linealConvert(plvelocity);
+  if (velDAC != NULL) {
+    voltage2 = velDAC->linealConvert(plvelocity);
     if (voltage2 > 4095) {
       voltage2 = 4095;
     }
-    sendvaltoDAC(VelDAC->DACnum, voltage2);
+    SendvaltoDAC(velDAC->DACnum, voltage2);
   }
 
   if (plvelocity == 0) { //NOTE OFF
     playNoteOff();
-  } else if (pinGATE != -1) {
-    digitalWrite(pinGATE, HIGH);
+  } else if (gatePin != -1) {
+    digitalWrite(gatePin, HIGH);
   }
 }
 
 // All Notes off
 void MIDICV::playNoteOff(void)
 {
-  if (pinGATE != -1) {
-    digitalWrite(pinGATE, LOW);
+  if (gatePin != -1) {
+    digitalWrite(gatePin, LOW);
   }
 }
 
@@ -214,13 +214,13 @@ void MIDICV::playNoteOff(void)
 // Capture channel and new minimum note
 void MIDICV::LearnThis(byte channel, byte pitch, byte velocity)
 {
-  if (PitchDAC == NULL) {
+  if (pitchDAC == NULL) {
     return;
   }
   // Learn channel and clock
   midiChannel = channel;
   // Set new minimum pitch
-  PitchDAC->minInput = pitch;
+  pitchDAC->minInput = pitch;
 #ifdef PRINTDEBUG
   Serial.print(channel);
   Serial.print(" Channel. New min Input: ");
@@ -232,14 +232,14 @@ void MIDICV::LearnThis(byte channel, byte pitch, byte velocity)
   notes.clear();
 
   // Go to next channel learn step.
-  if (LearnStep < MAXNumMIDI - 1 && LearnStep < 3) {
+  if (LearnStep < NumVoices - 1 && LearnStep < 3) {
     LearnStep++;
   } else {
     // Set normal mode
     LearnMode = NORMALMODE;
     LearnStep = 0;
     // Turn off LED
-    blink.setBlink(0, 0, 0);
+    Blink.setBlink(0, 0, 0);
     // Store value in EEPROM
     WriteMIDIeeprom();
   }
@@ -275,9 +275,9 @@ int PercussionNoteGate(byte pitch)
 // Check if received channel is any active MIDI
 void AllNotesOff(void)
 {
-  for (int i = 0; i < MAXNumMIDI; i++) {
-    ChanMIDI[i].playNoteOff();
-    ChanMIDI[i].notes.clear();
+  for (int i = 0; i < NumVoices; i++) {
+    Voice[i].playNoteOff();
+    Voice[i].notes.clear();
   }
 }
 
@@ -285,46 +285,46 @@ void AllNotesOff(void)
 int ReadMIDIeeprom(void)
 {
   //return -1;
-  MIDICV TempMIDI;
-  MultiPointConv TempConv;
-  int numMIDI, modeMIDI;
+  MIDICV tempMIDI;
+  MultiPointConv tempConv;
+  int numVoices, voiceMode;
   int i;
 
-  eeprom_read_block((void *)&numMIDI, (void *)0, sizeof(numMIDI));
-  eeprom_read_block((void *)&modeMIDI, (void *)sizeof(int), sizeof(modeMIDI));
+  eeprom_read_block((void *)&numVoices, (void *)0, sizeof(numVoices));
+  eeprom_read_block((void *)&voiceMode, (void *)sizeof(int), sizeof(voiceMode));
 #ifdef PRINTDEBUG
-  Serial.print("Read EEPROM Num MIDI");
-  Serial.print(numMIDI);
-  Serial.print(" / Mode MIDI: ");
-  Serial.println(modeMIDI);
+  Serial.print("Read EEPROM Num Voices");
+  Serial.print(numVoices);
+  Serial.print(" / Voice Mode: ");
+  Serial.println(voiceMode);
 #endif
-  if (numMIDI < 1 || numMIDI > 4) {
+  if (numVoices < 1 || numVoices > 4) {
     return (-1);
   }
-  if (modeMIDI <= MIDIMODE_INVALID || modeMIDI >= MIDIMODE_LAST) {
+  if (voiceMode <= MIDIMODE_INVALID || voiceMode >= MIDIMODE_LAST) {
     return (-1);
   }
 
   for (i = 0; i < 4; i++) {
-    eeprom_read_block((void *)&TempConv,
-                      (void *)(sizeof(int) * 2 + i * (sizeof(TempConv) + sizeof(TempMIDI))),
-                      sizeof(TempConv));
+    eeprom_read_block((void *)&tempConv,
+                      (void *)(sizeof(int) * 2 + i * (sizeof(tempConv) + sizeof(tempMIDI))),
+                      sizeof(tempConv));
     // stored in Pitch Only if EEPROM values for rangeDAC are correct
     if (i == 0) {
-      if (TempConv.rangeDAC == 4093) {
-        memcpy(&DACConv[i], &TempConv, sizeof(DACConv[i]));
+      if (tempConv.rangeDAC == 4093) {
+        memcpy(&DACConv[i], &tempConv, sizeof(DACConv[i]));
       } else {
         return (-1);
       }
     } else {
-      memcpy(&DACConv[i], &TempConv, sizeof(DACConv[i]));
+      memcpy(&DACConv[i], &tempConv, sizeof(DACConv[i]));
     }
 
-    eeprom_read_block((void *)&TempMIDI,
-                      (void *)(sizeof(int) * 2 + sizeof(TempConv) + i *
-                               (sizeof(TempConv) + sizeof(TempMIDI))),
-                      sizeof(TempMIDI));
-    memcpy(&ChanMIDI[i], &TempMIDI, sizeof(ChanMIDI[i]));
+    eeprom_read_block((void *)&tempMIDI,
+                      (void *)(sizeof(int) * 2 + sizeof(tempConv) + i *
+                               (sizeof(tempConv) + sizeof(tempMIDI))),
+                      sizeof(tempMIDI));
+    memcpy(&Voice[i], &tempMIDI, sizeof(Voice[i]));
     /*
        #ifdef PRINTDEBUG
        Serial.print("DACConv addr: ");
@@ -338,10 +338,10 @@ int ReadMIDIeeprom(void)
        #endif
      */
   }
-  MAXNumMIDI = numMIDI;
-  MIDImode = modeMIDI;
+  NumVoices = numVoices;
+  VoiceMode = voiceMode;
 
-  return (MAXNumMIDI);
+  return (NumVoices);
 }
 
 // Write MIDI properties from eeprom
@@ -351,33 +351,33 @@ void WriteMIDIeeprom(void)
   int i;
 #ifdef PRINTDEBUG
   Serial.println("Write MIDI");
-  Serial.print("Num MIDI: ");
-  Serial.print(MAXNumMIDI);
-  Serial.print(" / Mode MIDI: ");
-  Serial.println(MIDImode);
+  Serial.print("Num Voices: ");
+  Serial.print(NumVoices);
+  Serial.print(" / Voice Mode: ");
+  Serial.println(VoiceMode);
 #endif
 
   // Store in EEPROM number of channels and MIDI mode
-  eeprom_write_block((void *)&MAXNumMIDI, (void *)0, sizeof(MAXNumMIDI));
-  eeprom_write_block((void *)&MIDImode, (void *)sizeof(int), sizeof(MIDImode));
+  eeprom_write_block((void *)&NumVoices, (void *)0, sizeof(NumVoices));
+  eeprom_write_block((void *)&VoiceMode, (void *)sizeof(int), sizeof(VoiceMode));
   // Store DAC channels and MIDI config
   for (i = 0; i < 4; i++) {
     if (i == 0) {
       DACConv[i].rangeDAC = 4093;
     }
     eeprom_write_block((const void *)&DACConv[i],
-                       (void *)(sizeof(MAXNumMIDI) * 2 + i *
-                                (sizeof(DACConv[i]) + sizeof(ChanMIDI[i]))),
+                       (void *)(sizeof(NumVoices) * 2 + i *
+                                (sizeof(DACConv[i]) + sizeof(Voice[i]))),
                        sizeof(DACConv[i]));
-    eeprom_write_block((const void *)&ChanMIDI[i],
-                       (void *)(sizeof(MAXNumMIDI) * 2 + sizeof(DACConv[i]) + i *
-                                (sizeof(ChanMIDI[i]) + sizeof(DACConv[i]))), sizeof(ChanMIDI[i]));
+    eeprom_write_block((const void *)&Voice[i],
+                       (void *)(sizeof(NumVoices) * 2 + sizeof(DACConv[i]) + i *
+                                (sizeof(Voice[i]) + sizeof(DACConv[i]))), sizeof(Voice[i]));
     /*
        #ifdef PRINTDEBUG
        Serial.print("DACConv addr: ");
-       Serial.print((sizeof(MAXNumMIDI)*2+i*(sizeof(DACConv[i])+sizeof(ChanMIDI[i]))));
+       Serial.print((sizeof(NumVoices)*2+i*(sizeof(DACConv[i])+sizeof(Voice[i]))));
        Serial.print(" /2: ");
-       Serial.println((sizeof(MAXNumMIDI)*2+sizeof(DACConv[i])+i*(sizeof(ChanMIDI[i])+sizeof(DACConv[i]))));
+       Serial.println((sizeof(NumVoices)*2+sizeof(DACConv[i])+i*(sizeof(Voice[i])+sizeof(DACConv[i]))));
        Serial.print("DACConv 1: ");
        Serial.print(DACConv[i].DACPoints[1]);
        Serial.print(" /2: ");
@@ -388,80 +388,80 @@ void WriteMIDIeeprom(void)
 }
 
 // Set default MIDI properties manually
-void SetModeMIDI(int mode)
+void SetVoiceMode(int mode)
 {
-  if (MIDImode >= MIDIMODE_LAST) return;
+  if (VoiceMode >= MIDIMODE_LAST) return;
 
-  MIDImode = mode;
+  VoiceMode = mode;
   // Reset pointers
   for (int i = 0; i < 4; i++) {
-    ChanMIDI[i].PitchDAC = NULL;
-    ChanMIDI[i].VelDAC = NULL;
-    ChanMIDI[i].BendDAC = NULL;
-    ChanMIDI[i].ModulDAC = NULL;
-    ChanMIDI[i].pinGATE = -1;
-    ChanMIDI[i].midiChannel = 0;
+    Voice[i].pitchDAC = NULL;
+    Voice[i].velDAC = NULL;
+    Voice[i].bendDAC = NULL;
+    Voice[i].modDAC = NULL;
+    Voice[i].gatePin = -1;
+    Voice[i].midiChannel = 0;
   }
   Selector.clear();
 
   switch (mode) {
   case MONOMIDI:
-    MAXNumMIDI = 1;
-    ChanMIDI[0].PitchDAC = &DACConv[0];
-    ChanMIDI[0].VelDAC = &DACConv[1];
-    ChanMIDI[0].BendDAC = &DACConv[2];
-    ChanMIDI[0].ModulDAC = &DACConv[3];
-    ChanMIDI[0].pinGATE = PINGATE;
-    ChanMIDI[0].midiChannel = 1;
+    NumVoices = 1;
+    Voice[0].pitchDAC = &DACConv[0];
+    Voice[0].velDAC = &DACConv[1];
+    Voice[0].bendDAC = &DACConv[2];
+    Voice[0].modDAC = &DACConv[3];
+    Voice[0].gatePin = PINGATE;
+    Voice[0].midiChannel = 1;
     // Bend hava a range of -8192 (min bend) to 8191 (max bend) and output 0.5 V
-    ChanMIDI[0].BendDAC->rangeInput = 16383;
-    ChanMIDI[0].BendDAC->minInput = -8192;
-    ChanMIDI[0].BendDAC->rangeDAC = 68;
-    ChanMIDI[0].ModulDAC->rangeInput = 127;
+    Voice[0].bendDAC->rangeInput = 16383;
+    Voice[0].bendDAC->minInput = -8192;
+    Voice[0].bendDAC->rangeDAC = 68;
+    Voice[0].modDAC->rangeInput = 127;
     break;
   case DUALMIDI:
-    MAXNumMIDI = 2;
-    ChanMIDI[0].PitchDAC = &DACConv[0];
-    ChanMIDI[0].VelDAC = &DACConv[1];
-    ChanMIDI[0].pinGATE = PINGATE;
-    ChanMIDI[0].midiChannel = 1;
-    ChanMIDI[1].PitchDAC = &DACConv[2];
-    ChanMIDI[1].VelDAC = &DACConv[3];
-    ChanMIDI[1].pinGATE = PINGATE3;
-    ChanMIDI[1].midiChannel = 2;
+    NumVoices = 2;
+    Voice[0].pitchDAC = &DACConv[0];
+    Voice[0].velDAC = &DACConv[1];
+    Voice[0].gatePin = PINGATE;
+    Voice[0].midiChannel = 1;
+    Voice[1].pitchDAC = &DACConv[2];
+    Voice[1].velDAC = &DACConv[3];
+    Voice[1].gatePin = PINGATE3;
+    Voice[1].midiChannel = 2;
     break;
   case QUADMIDI:
-    MAXNumMIDI = 4;
-    ChanMIDI[0].PitchDAC = &DACConv[0];
-    ChanMIDI[0].pinGATE = PINGATE;
-    ChanMIDI[0].midiChannel = 1;
-    ChanMIDI[1].PitchDAC = &DACConv[1];
-    ChanMIDI[1].pinGATE = PINGATE2;
-    ChanMIDI[1].midiChannel = 2;
-    ChanMIDI[2].PitchDAC = &DACConv[2];
-    ChanMIDI[2].pinGATE = PINGATE3;
-    ChanMIDI[2].midiChannel = 3;
-    ChanMIDI[3].PitchDAC = &DACConv[3];
-    ChanMIDI[3].pinGATE = PINGATE4;
-    ChanMIDI[3].midiChannel = 4;
+    NumVoices = 4;
+    Voice[0].pitchDAC = &DACConv[0];
+    Voice[0].gatePin = PINGATE;
+    Voice[0].midiChannel = 1;
+    Voice[1].pitchDAC = &DACConv[1];
+    Voice[1].gatePin = PINGATE2;
+    Voice[1].midiChannel = 2;
+    Voice[2].pitchDAC = &DACConv[2];
+    Voice[2].gatePin = PINGATE3;
+    Voice[2].midiChannel = 3;
+    Voice[3].pitchDAC = &DACConv[3];
+    Voice[3].gatePin = PINGATE4;
+    Voice[3].midiChannel = 4;
     break;
   case POLYFIRST:
   case POLYLAST:
   case POLYHIGH:
   case POLYLOW:
-    MAXNumMIDI = 4;
-    ChanMIDI[0].PitchDAC = &DACConv[0];
-    ChanMIDI[0].pinGATE = PINGATE;
-    ChanMIDI[0].midiChannel = 1;
-    ChanMIDI[1].PitchDAC = &DACConv[1];
-    ChanMIDI[1].pinGATE = PINGATE2;
-    ChanMIDI[1].midiChannel = 1;
-    ChanMIDI[2].PitchDAC = &DACConv[2];
-    ChanMIDI[2].pinGATE = PINGATE3;
-    ChanMIDI[2].midiChannel = 1;
-    ChanMIDI[3].PitchDAC = &DACConv[3];
-    ChanMIDI[3].pinGATE = PINGATE4;
-    ChanMIDI[3].midiChannel = 1;
+    NumVoices = 4;
+    Voice[0].pitchDAC = &DACConv[0];
+    Voice[0].gatePin = PINGATE;
+    Voice[0].midiChannel = 1;
+    Voice[1].pitchDAC = &DACConv[1];
+    Voice[1].gatePin = PINGATE2;
+    Voice[1].midiChannel = 1;
+    Voice[2].pitchDAC = &DACConv[2];
+    Voice[2].gatePin = PINGATE3;
+    Voice[2].midiChannel = 1;
+    Voice[3].pitchDAC = &DACConv[3];
+    Voice[3].gatePin = PINGATE4;
+    Voice[3].midiChannel = 1;
     break;
   case PERCTRIG:
     break;

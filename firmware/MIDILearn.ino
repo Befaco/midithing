@@ -37,7 +37,7 @@ void EnterLearnMode(void)
   LearnMode = ENTERLEARN;
   LearnStep = 0;
   // Init blinker
-  blink.setBlink(900, 100, -1, PINLED);
+  Blink.setBlink(900, 100, -1, PINLED);
 
   // All Notes off
   AllNotesOff();
@@ -59,7 +59,7 @@ void DoLearnCycle(void)
     // Set normal mode
     LearnMode = NORMALMODE;
     // Turn off LED blink
-    blink.setBlink(0, 0, 0);
+    Blink.setBlink(0, 0, 0);
     // Store value in EEPROM
     WriteMIDIeeprom();
 
@@ -76,13 +76,13 @@ void EnterCalMode(void)
   // Set Learn mode flag
   LearnMode = ENTERCAL;
   // Init blinker
-  blink.setBlink(500, 500, -1, PINLED2);
+  Blink.setBlink(500, 500, -1, PINLED2);
 
   // All Notes off
   AllNotesOff();
 
   // Set mode to 4 channels
-  SetModeMIDI(QUADMIDI);
+  SetVoiceMode(QUADMIDI);
 
   // Init timer
   LearnInitTime = millis();
@@ -115,7 +115,7 @@ void EndCalMode(void)
   // Store in EEPROM
   WriteMIDIeeprom();
   // Turn off LED blink
-  blink.setBlink(0, 0, 0);
+  Blink.setBlink(0, 0, 0);
 #ifdef PRINTDEBUG
   Serial.println("End Cal Mode");
 #endif
@@ -129,40 +129,40 @@ byte CalProcessNote(byte channel, byte pitch, byte velocity)
     // Channel 5 for setting modes
     switch (pitch) {
     case 0: // C
-      SetModeMIDI(MONOMIDI);
+      SetVoiceMode(MONOMIDI);
       return (1);
       break;
     case 2: // D
-      SetModeMIDI(DUALMIDI);
+      SetVoiceMode(DUALMIDI);
       return (1);
       break;
     case 4: // E
-      SetModeMIDI(QUADMIDI);
+      SetVoiceMode(QUADMIDI);
       return (1);
       break;
     case 5: // F
-      SetModeMIDI(PERCTRIG);
+      SetVoiceMode(PERCTRIG);
       return (1);
       break;
   /*
     case 6:
-      SetModeMIDI(PERCGATE);
+      SetVoiceMode(PERCGATE);
       break;
   */
     case 7: // G
-      SetModeMIDI(POLYFIRST);
+      SetVoiceMode(POLYFIRST);
       return (1);
       break;
     case 9: // A
-      SetModeMIDI(POLYLAST);
+      SetVoiceMode(POLYLAST);
       return (1);
       break;
     case 11: // B
-      SetModeMIDI(POLYHIGH);
+      SetVoiceMode(POLYHIGH);
       return (1);
       break;
     case 12: // C'
-      SetModeMIDI(POLYLOW);
+      SetVoiceMode(POLYLOW);
       return (1);
       break;
     default:

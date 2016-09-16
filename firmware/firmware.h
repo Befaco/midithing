@@ -36,7 +36,7 @@
 #define ENTERCAL 2
 
 // MIDI Modes
-enum MIDImodes {
+enum VoiceModes {
   MIDIMODE_INVALID = 0,
   MONOMIDI = 1,
   DUALMIDI,
@@ -58,7 +58,7 @@ enum MIDImodes {
 //////////////////////////////////////////////
 // Function declaration
 // DAC
-void  sendvaltoDAC(unsigned int port, unsigned int val);
+void  SendvaltoDAC(unsigned int port, unsigned int val);
 //MIDI Handles
 void HandleNoteOn(byte channel, byte pitch, byte velocity);
 void HandleNoteOff(byte channel, byte pitch, byte velocity);

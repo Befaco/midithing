@@ -40,7 +40,7 @@ void Blinker::setBlink(unsigned long pon, unsigned long poff, int times, int new
       if (pinLED < 128) {
         digitalWrite(pinLED, LOW);
       } else {
-        sendvaltoDAC(pinLED - 128, 0);
+        SendvaltoDAC(pinLED - 128, 0);
       }
     }
     status = LOW;
@@ -55,7 +55,7 @@ void Blinker::setBlink(unsigned long pon, unsigned long poff, int times, int new
     if (pinLED < 128) {
       digitalWrite(pinLED, HIGH);
     } else {
-      sendvaltoDAC(pinLED - 128, 4095);
+      SendvaltoDAC(pinLED - 128, 4095);
     }
   }
 }
@@ -80,7 +80,7 @@ void Blinker::playBlink(void)
         if (pinLED < 128) {
           digitalWrite(pinLED, LOW);
         } else {
-          sendvaltoDAC(pinLED - 128, 0);
+          SendvaltoDAC(pinLED - 128, 0);
         }
       }
     }
@@ -100,7 +100,7 @@ void Blinker::playBlink(void)
         if (pinLED < 128) {
           digitalWrite(pinLED, HIGH);
         } else {
-          sendvaltoDAC(pinLED - 128, 4095);
+          SendvaltoDAC(pinLED - 128, 4095);
         }
       }
     }

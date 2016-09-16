@@ -45,7 +45,7 @@ public:
   void playBlink(void);
 };
 
-extern Blinker gates[10]; // Gates triggers
+extern Blinker Gates[10]; // Gates triggers
 
 /*
    // Blink a double color two	pin LED
