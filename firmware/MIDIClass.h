@@ -27,7 +27,6 @@
 // bitfield implementation adapted from
 // http://stackoverflow.com/questions/1590893/error-trying-to-define-a-1-024-bit-128-byte-bit-field
 
-#include <limits.h>
 #include "firmware.h"
 #include "MultiPointConv.h"
 #include "BitField128.h"

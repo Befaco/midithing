@@ -1,6 +1,8 @@
 #ifndef __BITFIELD128_H__
 #define __BITFIELD128_H__
 
+#include <limits.h>
+
 typedef byte BitField128[16]; // 128 bits
 
 static inline void setbit128(BitField128 field, size_t idx)
