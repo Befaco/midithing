@@ -60,12 +60,11 @@ void MIDICV::ProcessNoteOn(byte pitch, byte velocity)
 }
 
 // Actions to perform for Note Off
-void MIDICV::ProcessNoteOff(byte pitch, byte velocity)
+void MIDICV::ProcessNoteOff(byte pitch)
 {
 #ifdef PRINTDEBUG
   Serial.print(pitch);
   Serial.print(" noteoff / v ");
-  Serial.println(velocity);
   PrintNotes();
 #endif
 

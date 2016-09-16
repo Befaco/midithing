@@ -77,8 +77,7 @@ void HandleNoteOn(byte channel, byte pitch, byte velocity)
   if (LearnMode != ENTERCAL) {
     blink.setBlink(100, 1, 1, PINLED);  // Blink once every Note ON (not in CAL/LEARN mode)
   }
-  ChanMIDI[MIDIactive].ProcessNoteOn(pitch, velocity);
-  Selector.addToPlaying(pitch);
+  Selector.noteOn(MIDIactive, pitch, velocity);
 }
 
 // Do whatever you want when you receive a Note Off.
@@ -103,15 +102,7 @@ void HandleNoteOff(byte channel, byte pitch, byte velocity)
     return;
   }
 
-  ChanMIDI[MIDIactive].ProcessNoteOff(pitch, velocity);
-  Selector.removeFromPlaying(pitch);
-  if (Selector.popNextNoteFromPool(&pitch)) {
-    // in POLYLATEST, the order of "latest note" is changing TODO
-    ChanMIDI[MIDIactive].ProcessNoteOn(pitch, 64);
-    Selector.addToPlaying(pitch);
-  }
-
-  // if we're in poly mode, we should trigger a new note if anything is waiting in the pool
+  Selector.noteOff(MIDIactive, pitch);
 }
 
 // Do whatever you want when you receive a Note On.

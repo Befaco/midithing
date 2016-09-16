@@ -162,7 +162,7 @@ public:
   MIDICV() {}
 
   void ProcessNoteOn(byte pitch, byte velocity);
-  void ProcessNoteOff(byte pitch, byte velocity);
+  void ProcessNoteOff(byte pitch);
   void ProcessBend(int bend);
   void ProcessModul(byte value);
 #ifdef PRINTDEBUG
@@ -178,21 +178,56 @@ public:
 class VoiceSelector {
 public:
 
-  void addToPlaying(byte pitch)
-  {
-    playing_.setPlaying(pitch, 64);
-  }
-
-  void removeFromPlaying(byte pitch)
-  {
-    playing_.setPlaying(pitch, 0);
-  }
-
   void clear()
   {
     playing_.clear();
     pool_.clear();
   }
+
+  void noteOn(int channel, byte pitch, byte velocity)
+  {
+    ChanMIDI[channel].ProcessNoteOn(pitch, velocity);
+    addToPlaying(pitch);
+  }
+
+  void noteOff(int channel, byte pitch)
+  {
+    ChanMIDI[channel].ProcessNoteOff(pitch);
+    removeFromPlaying(pitch);
+    if (IsPolyMode() && popNextNoteFromPool(&pitch)) {
+      ChanMIDI[channel].ProcessNoteOn(pitch, 64);
+      if (MIDImode == POLYLAST) {
+        // the note being pulled from the pool will be older than anything playing
+        addToPlayingFront(pitch);
+      }
+      else {
+        addToPlaying(pitch);
+      }
+    }
+  }
+
+  // Check if received channel is any active MIDI
+  int getTargetChannel(byte channel, byte pitch = 0, byte velocity = 0)
+  {
+    // If in percussion mode, check the note and return the associated gate
+    if (IsPercMode() && channel == 10) {
+      return (PercussionNoteGate(pitch));
+    }
+
+    if (IsPolyMode()) {
+      return getPolyTargetChannel(channel, pitch, velocity);
+    }
+
+    // In other modes, check if received one is an active channel
+    for (int i = 0; i < MAXNumMIDI; i++) {
+      if (ChanMIDI[i].midiChannel == channel && ChanMIDI[i].PitchDAC->minInput < pitch) {
+        return (i);
+      }
+    }
+    return (-1);
+  }
+
+private:
 
   bool popNextNoteFromPool(byte* pitch, byte* velocity = nullptr)
   {
@@ -246,37 +281,29 @@ public:
     return false;
   }
 
-  // Check if received channel is any active MIDI
-  int getTargetChannel(byte channel, byte pitch = 0, byte velocity = 0)
+  void addToPlaying(byte pitch, byte velocity = 64)
   {
-    // If in percussion mode, check the note and return the associated gate
-    if (IsPercMode() && channel == 10) {
-      return (PercussionNoteGate(pitch));
-    }
-
-    if (IsPolyMode()) {
-      return getPolyTargetChannel(channel, pitch, velocity);
-    }
-
-    // In other modes, check if received one is an active channel
-    for (int i = 0; i < MAXNumMIDI; i++) {
-      if (ChanMIDI[i].midiChannel == channel && ChanMIDI[i].PitchDAC->minInput < pitch) {
-        return (i);
-      }
-    }
-    return (-1);
+    playing_.setPlaying(pitch, velocity);
   }
 
-private:
-
-  void addToPool(byte pitch)
+  void addToPlayingFront(byte pitch, byte velocity = 64)
   {
-    pool_.setPlaying(pitch, 64);
+    playing_.setPlayingFront(pitch, velocity);
   }
 
-  void addToPoolFront(byte pitch)
+  void removeFromPlaying(byte pitch)
   {
-    pool_.setPlayingFront(pitch, 64);
+    playing_.setPlaying(pitch, 0);
+  }
+
+  void addToPool(byte pitch, byte velocity = 64)
+  {
+    pool_.setPlaying(pitch, velocity);
+  }
+
+  void addToPoolFront(byte pitch, byte velocity = 64)
+  {
+    pool_.setPlayingFront(pitch, velocity);
   }
 
   void removeFromPool(byte pitch)
@@ -306,9 +333,9 @@ private:
     }
 
     if (pitch < highestPitch) {
-      ChanMIDI[highestChannel].ProcessNoteOff(highestPitch, 0); // TODO: verify that there's only one note per channel in this mode
+      ChanMIDI[highestChannel].ProcessNoteOff(highestPitch); // TODO: verify that there's only one note per channel in this mode
       addToPool(highestPitch);
-      playing_.setPlaying(highestPitch, 0);
+      removeFromPlaying(highestPitch);
       return highestChannel;
     }
 
@@ -338,9 +365,9 @@ private:
     }
 
     if (pitch > lowestPitch) {
-      ChanMIDI[lowestChannel].ProcessNoteOff(lowestPitch, 0); // TODO: verify that there's only one note per channel in this mode
+      ChanMIDI[lowestChannel].ProcessNoteOff(lowestPitch); // TODO: verify that there's only one note per channel in this mode
       addToPool(lowestPitch);
-      playing_.setPlaying(lowestPitch, 0);
+      removeFromPlaying(lowestPitch);
       return lowestChannel;
     }
 
@@ -377,9 +404,9 @@ private:
     }
 
     if (oldestChannel >= 0) {
-      ChanMIDI[oldestChannel].ProcessNoteOff(oldestPitch, 0); // TODO: verify that there's only one note per channel in this mode
+      ChanMIDI[oldestChannel].ProcessNoteOff(oldestPitch); // TODO: verify that there's only one note per channel in this mode
       addToPoolFront(oldestPitch);
-      playing_.setPlaying(oldestPitch, 0);
+      removeFromPlaying(oldestPitch);
       return oldestChannel;
     }
 
