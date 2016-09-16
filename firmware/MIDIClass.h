@@ -78,7 +78,7 @@ public:
 
   byte setPlaying(byte pitch, byte velocity) {
     if (velocity) {
-      if (!isbitset128(noteField_, (size_t)pitch)) {
+      if (!isbitset128(noteField_, (size_t)pitch) && count_ < MAXNOTES) {
         setbit128(noteField_, (size_t)pitch);
         events_[count_++] = { pitch, velocity };
       }
@@ -104,7 +104,7 @@ public:
 
   byte setPlayingFront(byte pitch, byte velocity) {
     if (velocity) {
-      if (!isbitset128(noteField_, (size_t)pitch)) {
+      if (!isbitset128(noteField_, (size_t)pitch) && count_ < MAXNOTES) {
         setbit128(noteField_, (size_t)pitch);
         for (int i = count_ - 1; i >= 0; i--) {
           events_[i + 1] = events_[i];
