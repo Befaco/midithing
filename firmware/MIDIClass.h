@@ -283,32 +283,44 @@ private:
 
   void addToPlaying(byte pitch, byte velocity = 64)
   {
-    playing_.setPlaying(pitch, velocity);
+    if (IsPolyMode()) {
+      playing_.setPlaying(pitch, velocity);
+    }
   }
 
   void addToPlayingFront(byte pitch, byte velocity = 64)
   {
-    playing_.setPlayingFront(pitch, velocity);
+    if (IsPolyMode()) {
+      playing_.setPlayingFront(pitch, velocity);
+    }
   }
 
   void removeFromPlaying(byte pitch)
   {
-    playing_.setPlaying(pitch, 0);
+    if (IsPolyMode()) {
+      playing_.setPlaying(pitch, 0);
+    }
   }
 
   void addToPool(byte pitch, byte velocity = 64)
   {
-    pool_.setPlaying(pitch, velocity);
+    if (IsPolyMode()) {
+      pool_.setPlaying(pitch, velocity);
+    }
   }
 
   void addToPoolFront(byte pitch, byte velocity = 64)
   {
-    pool_.setPlayingFront(pitch, velocity);
+    if (IsPolyMode()) {
+      pool_.setPlayingFront(pitch, velocity);
+    }
   }
 
   void removeFromPool(byte pitch)
   {
-    pool_.setPlaying(pitch, 0);
+    if (IsPolyMode()) {
+      pool_.setPlaying(pitch, 0);
+    }
   }
 
   int getPolyLowTarget(byte channel, byte pitch, byte velocity)
