@@ -8,11 +8,12 @@ Firmware for the [Befaco](http://befaco.org) Eurorack MIDI module (MIDI Thing).
 - Bug fixes:
 	- Learn mode min note play on next high note
 	
-	- Can't cancel Learn mode 
+	- Can't cancel Learn mode. Implemented push to cancel.
 	
-	- Learn mode in same channel for same min note can be done (incorrect keyboard split)
-
+	
 - Changes and improvements
+
+	- Added duophonic mode.
 	- Added: lightshow at power up for Voice leds, Voice gates, clock and ST/SP check (leds and signals)
 	
 	- Added: visual feedback when save, cancel or error action is done:
