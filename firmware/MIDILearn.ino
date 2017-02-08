@@ -33,12 +33,14 @@
 // Initialize Learn Mode
 void EnterLearnMode(void)
 {
+  InitLearnMode();
   // Set Learn mode flag
   LearnMode = ENTERLEARN;
   LearnStep = 0;
   // Init blinker
-  blink.setBlink(900, 100, -1, PINLED);
-
+  //Blink.setBlink(900, 100, -1, PINLED);
+  Blink.setBlink(100, 0, -1, PINLED);
+  Blink.setBlink(100, 0, -1, PINGATE);
   // All Notes off
   AllNotesOff();
 
@@ -54,19 +56,21 @@ void DoLearnCycle(void)
 {
   unsigned long current = millis();
 
-// 10 seconds learn time
+ /* // 10 seconds learn time  "Only cancel with button
   if (current > LearnInitTime + 10000) {
-    // Set normal mode
-    LearnMode = NORMALMODE;
-    // Turn off LED blink
-    blink.setBlink(0, 0, 0);
-    // Store value in EEPROM
-    WriteMIDIeeprom();
+    CancelLearnMode();
+      // Set normal mode
+      LearnMode = NORMALMODE;
+      // Turn off LED blink
+      Blink.setBlink(0, 0, 0);
+      Blink.setBlink(0, 0, 0, PINLED);
+      // Store value in EEPROM
+      WriteMIDIeeprom();*/
 
 #ifdef PRINTDEBUG
     Serial.println("End Learn Mode");
 #endif
-  }
+  //}
 }
 
 //////////////////////////////
@@ -76,13 +80,14 @@ void EnterCalMode(void)
   // Set Learn mode flag
   LearnMode = ENTERCAL;
   // Init blinker
-  blink.setBlink(500, 500, -1, PINLED2);
+  //Blink.setBlink(500, 500, -1, PINLED2);
+  Blink.setBlink(100, 0, -1, PINLED2);
 
   // All Notes off
   AllNotesOff();
 
   // Set mode to 4 channels
-  SetModeMIDI(QUADMIDI);
+  SetVoiceMode(QUADMIDI);
 
   // Init timer
   LearnInitTime = millis();
@@ -96,8 +101,8 @@ void DoCalCycle(void)
 {
   unsigned long current = millis();
 
-  // After 120 seconds without receiving a note, exit calibration
-  if (current > LearnInitTime + 120000) {
+  // After 55 seconds without receiving a note, exit calibration
+  if (current > LearnInitTime + 55000) {
 #ifdef PRINTDEBUG
     Serial.print(LearnInitTime);
     Serial.print(" msec ");
@@ -110,12 +115,15 @@ void DoCalCycle(void)
 
 void EndCalMode(void)
 {
+
   // Set normal mode
   LearnMode = NORMALMODE;
   // Store in EEPROM
   WriteMIDIeeprom();
   // Turn off LED blink
-  blink.setBlink(0, 0, 0);
+  Blink.setBlink(0, 0, 0);
+  Blink.setBlink(0, 0, 0, PINLED2);
+
 #ifdef PRINTDEBUG
   Serial.println("End Cal Mode");
 #endif
@@ -123,32 +131,131 @@ void EndCalMode(void)
 
 byte CalProcessNote(byte channel, byte pitch, byte velocity)
 {
-  if (channel < 5) { // Channels 1-4 for DAC calibration 0-3
-    return (DACConv[channel - 1].Processnote(channel, pitch, velocity));
-  } else if (channel == 5) {
-    // Channel 5 for setting modes
+  byte lv_return = 1;
+
+  if (channel == 11 || channel == 12 || channel == 13 || channel == 14) { // Channels 1-4 for DAC calibration 0-3
+    channel = channel - 10;
+    lv_return = (DACConv[channel - 1].Processnote(channel, pitch, velocity));
+  } else if (channel >= 1 && channel <= 10) {
+
+    pitch = getElementalPitch(pitch);
+
     switch (pitch) {
-    case 0:
-      SetModeMIDI(MONOMIDI);
-      return (1);
-      break;
-    case 2:
-      SetModeMIDI(DUALMIDI);
-      return (1);
-      break;
-    case 4:
-      SetModeMIDI(QUADMIDI);
-      return (1);
-      break;
-    case 5:
-      SetModeMIDI(PERCTRIG);
-      return (1);
-      break;
-      /*case 6:
-         SetModeMIDI(PERCGATE);
-         break;
-       */
+      case 0: // C
+        SetVoiceMode(MONOMIDI);
+        lv_return = 1;
+        break;
+      case 1: // C#
+        SetVoiceMode(DUALMIDI);
+        lv_return = 1;
+        break;
+      case 2: // D
+        SetVoiceMode(QUADMIDI);
+        lv_return = 1;
+        break;
+      case 3: // D#
+        SetVoiceMode(PERCTRIG);
+        lv_return = 1;
+        break;
+      case 4: // E
+        SetVoiceMode(DUOFIRST);
+        lv_return = 1;
+        break;
+      case 5: // F
+        SetVoiceMode(DUOLAST);
+        lv_return = 1;
+        break;
+      case 6: // F#
+        SetVoiceMode(DUOHIGH);
+        lv_return = 1;
+        break;
+      case 7: // G
+        SetVoiceMode(DUOLOW);
+        lv_return = 1;
+        break;
+      case 8: // G#
+        SetVoiceMode(POLYFIRST);
+        lv_return = 1;
+        break;
+      case 9: // A
+        SetVoiceMode(POLYLAST);
+        lv_return = 1;
+        break;
+      case 10: // A#
+        SetVoiceMode(POLYHIGH);
+        lv_return = 1;
+        break;
+      case 11: // B
+        SetVoiceMode(POLYLOW);
+        lv_return = 1;
+        break;
+      default:
+        lv_return = 0;
+        break;
     }
+  } else {
+    lv_return = 0;
   }
-  return (0);
+  Blink.setBlink(0, 0, 0);
+  switch (lv_return) {
+    case 1:
+      BlinkOK();
+      if (channel >= 1 && channel <= 10) {
+        EndCalMode();
+      }
+      break;
+    case 0:
+      BlinkKO();
+      Blink.setBlink(0, 0, 0);
+      Blink.setBlink(100, 0, -1, PINLED2);
+      break;
+    default:
+      //do nothing
+      break;
+  }
+
+  return (lv_return);
+}
+
+byte getElementalPitch(byte pitch)
+{
+  while (pitch >= 12) {
+    pitch = pitch - 12;
+  }
+  return (pitch);
+}
+
+void InitLearnMode(void) {
+  for (int i = 0; i < 4; i++) {
+    Voice[i].InitLearn();
+  }
+}
+
+void ConfirmLearnMode(void)
+{
+
+  for (int i = 0; i < 4; i++) {
+    Voice[i].ResetOldLearn();
+  }
+  BlinkOK();
+  EndLearnMode();
+}
+
+void EndLearnMode() {
+  // Set normal mode
+  LearnMode = NORMALMODE;
+  LearnStep = 0;
+  // Store value in EEPROM
+  WriteMIDIeeprom();
+  return;
+}
+
+void CancelLearnMode(void)
+{
+  for (int i = 0; i < 4; i++) {
+    Voice[i].ResetLearn();
+    Voice[i].ResetOldLearn();
+  }
+  BlinkKO();
+  EndLearnMode();
 }
