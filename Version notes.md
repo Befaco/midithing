@@ -1,10 +1,7 @@
 # MIDI Thing
 Firmware for the [Befaco](http://befaco.org) Eurorack MIDI module (MIDI Thing).
 
-Branch coded by Numelar (albertonafu@gmail.com)
-Branch developed from Polyphony branch 
-
-- Version V2 Beta based on Polyphonic branch by Jeremy Bernstein.
+- Version V2 Beta based on Polyphonic mode
 
 # Changes in PolyXp Duo version (v2)
 
@@ -72,33 +69,33 @@ Branch developed from Polyphony branch
 			Out Gate4
 		
 	- Changed: in MENU mode, configuration (MIDI Mode) can be done with this MIDI notes:
-#			_________________________________________________
-#			|Root Note 		|				|			   	|
-#			|(MID note nr.)	|Musical note	|Mode selected	|
-#			|_______________|_______________|_______________|
-#			|			0	|		C		|	MONOMIDI	|
-#			|			1	|		C#		|	DUALMIDI	|
-#			|			2	|		D		|	QUADMIDI	|
-#			|			3	|		D#		|	PERCTRIG	|
-#			|			4	|		E		|	DUOFIRST	|
-#			|			5	| 		F		|	DUOLAST		|
-#			|			6	|		F#		|	DUOHIGH		|
-#			|			7	|		G		|	DUOLOW		|
-#			|			8	|		G#		|	POLYFIRST	|
-#			|			9	| 		A		|	POLYLAST	|
-#			|			10	|		A#		|	POLYHIGH	|
-#			|			11	|		B		|	POLYLOW		|
-#			|_______________|_______________|_______________|
+.			_________________________________________________
+.			|Root Note 		|				|			   	|
+.			|(MID note nr.)	|Musical note	|Mode selected	|
+.			|_______________|_______________|_______________|
+.			|			0	|		C		|	MONOMIDI	|
+.			|			1	|		C#		|	DUALMIDI	|
+.			|			2	|		D		|	QUADMIDI	|
+.			|			3	|		D#		|	PERCTRIG	|
+.			|			4	|		E		|	DUOFIRST	|
+.			|			5	| 		F		|	DUOLAST		|
+.			|			6	|		F#		|	DUOHIGH		|
+.			|			7	|		G		|	DUOLOW		|
+.			|			8	|		G#		|	POLYFIRST	|
+.			|			9	| 		A		|	POLYLAST	|
+.			|			10	|		A#		|	POLYHIGH	|
+.			|			11	|		B		|	POLYLOW		|
+.			|_______________|_______________|_______________|
 
 	- Added: in MENU mode, channel Overlap and non-Overlap mode (only in monophonic modes), this modes are stored in memory: 
-# 		- MIDI Channel 15
-#			_________________________________________________
-#			|Root Note 		|				|			   	|
-#			|(MID note nr.)	|Musical note	|Mode selected	|
-#			|_______________|_______________|_______________|
-#			|			0	|		C		|	Overlap		|
-#			|			1	|		C#		|	Non- Overlap|
-#			|_______________|_______________|_______________|
+. 		- MIDI Channel 15
+.			_________________________________________________
+.			|Root Note 		|				|			   	|
+.			|(MID note nr.)	|Musical note	|Mode selected	|
+.			|_______________|_______________|_______________|
+.			|			0	|		C		|	Overlap		|
+.			|			1	|		C#		|	Non- Overlap|
+.			|_______________|_______________|_______________|
 
 		- Overlap active 		- Gate is not retriggered when one note is hold and insert another note.
 		- Non-Overlap active 	- Gate retriggered when one note is hold and insert another note.
@@ -115,22 +112,22 @@ Branch developed from Polyphony branch
 		(|)Gate trig		
  
 	- Added: Clock resolution (ppqn) change, this mode are stored in memory:
-# 		- MIDI Channel 15
-#			_____________________________________________________
-#			|Root Note 		|				|			   		|
-#			|(MID note nr.)	|Musical note	|Clock Res. selected|
-#			|_______________|_______________|___________________|
-#			|			2	|		D		|	24				|
-#			|			3	|		D#		|	12				|
-#			|			4	|		E		|	6				|
-#			|			5	| 		F		|	4				|
-#			|			6	|		F#		|	2				|
-#			|			7	|		G		|	1				|
-#			|			8	|		G#		|	36				|
-#			|			9	| 		A		|	48				|
-#			|			10	|		A#		|	52				|
-#			|			11	|		B		|	96				|
-#			|_______________|_______________|___________________|
+. 		- MIDI Channel 15
+.			_____________________________________________________
+.			|Root Note 		|				|			   		|
+.			|(MID note nr.)	|Musical note	|Clock Res. selected|
+.			|_______________|_______________|___________________|
+.			|			2	|		D		|	24				|
+.			|			3	|		D#		|	12				|
+.			|			4	|		E		|	6				|
+.			|			5	| 		F		|	4				|
+.			|			6	|		F#		|	2				|
+.			|			7	|		G		|	1				|
+.			|			8	|		G#		|	36				|
+.			|			9	| 		A		|	48				|
+.			|			10	|		A#		|	52				|
+.			|			11	|		B		|	96				|
+.			|_______________|_______________|___________________|
 	
 		
 
