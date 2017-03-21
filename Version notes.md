@@ -69,42 +69,38 @@ Firmware for the [Befaco](http://befaco.org) Eurorack MIDI module (MIDI Thing).
 			Out Gate4
 		
 	- Changed: in MENU mode, configuration (MIDI Mode) can be done with this MIDI notes:
-.			_________________________________________________
-.			|Root Note 		|				|			   	|
-.			|(MID note nr.)	|Musical note	|Mode selected	|
-.			|_______________|_______________|_______________|
-.			|			0	|		C		|	MONOMIDI	|
-.			|			1	|		C#		|	DUALMIDI	|
-.			|			2	|		D		|	QUADMIDI	|
-.			|			3	|		D#		|	PERCTRIG	|
-.			|			4	|		E		|	DUOFIRST	|
-.			|			5	| 		F		|	DUOLAST		|
-.			|			6	|		F#		|	DUOHIGH		|
-.			|			7	|		G		|	DUOLOW		|
-.			|			8	|		G#		|	POLYFIRST	|
-.			|			9	| 		A		|	POLYLAST	|
-.			|			10	|		A#		|	POLYHIGH	|
-.			|			11	|		B		|	POLYLOW		|
-.			|_______________|_______________|_______________|
+		- MIDI Channel from 1 to 10
 
-	- Added: in MENU mode, channel Overlap and non-Overlap mode (only in monophonic modes), this modes are stored in memory: 
-. 		- MIDI Channel 15
-.			_________________________________________________
-.			|Root Note 		|				|			   	|
-.			|(MID note nr.)	|Musical note	|Mode selected	|
-.			|_______________|_______________|_______________|
-.			|			0	|		C		|	Overlap		|
-.			|			1	|		C#		|	Non- Overlap|
-.			|_______________|_______________|_______________|
+		[Root Note(Musical note)-->Mode selected]
+		- NOTE 0(C)-->MONOMIDI
+		- NOTE 1(C#)-->DUALMIDI
+		- NOTE 2(D)-->QUADMIDI
+		- NOTE 3(D#)-->PERCTRIG
+		- NOTE 4(E)-->DUOFIRST
+		- NOTE 5(F)-->DUOLAST
+		- NOTE 6(F#)-->DUOHIGH
+		- NOTE 7(G)-->DUOLOW
+		- NOTE 8(G#)-->POLYFIRST
+		- NOTE 9(A)-->POLYLAST
+		- NOTE 10(A#)-->POLYHIGH
+		- NOTE 11(B)-->POLYLOW
 
-		- Overlap active 		- Gate is not retriggered when one note is hold and insert another note.
-		- Non-Overlap active 	- Gate retriggered when one note is hold and insert another note.
+	- Added: in MENU mode, change Legato and Gate Retrigger mode (only in monophonic modes), this modes are stored in memory: 
+		- MIDI Channel 15
+		
+		[Root Note(Musical note)-->Mode selected]
+		- NOTE 0(C)-->Legato		|
+		- NOTE 1(C#)-->Retrigger
+
+
+		- Legato active         - Gate is not retriggered when one note is hold and insert another note.
+		- Retrigger active 	- Gate retriggered when one note is hold and insert another note.
 	
-		Overlap active
+		Legato active
 			Notes  	|note 1         |note2
 			Gate   	|------------------------
 
-		Non-Overlap active
+		Retrigger active
 			Notes  	|note 1         |note2
 			Gate	|---------------|--------
 		
@@ -112,22 +108,17 @@ Firmware for the [Befaco](http://befaco.org) Eurorack MIDI module (MIDI Thing).
 		(|)Gate trig		
  
 	- Added: Clock resolution (ppqn) change, this mode are stored in memory:
-. 		- MIDI Channel 15
-.			_____________________________________________________
-.			|Root Note 		|				|			   		|
-.			|(MID note nr.)	|Musical note	|Clock Res. selected|
-.			|_______________|_______________|___________________|
-.			|			2	|		D		|	24				|
-.			|			3	|		D#		|	12				|
-.			|			4	|		E		|	6				|
-.			|			5	| 		F		|	4				|
-.			|			6	|		F#		|	2				|
-.			|			7	|		G		|	1				|
-.			|			8	|		G#		|	36				|
-.			|			9	| 		A		|	48				|
-.			|			10	|		A#		|	52				|
-.			|			11	|		B		|	96				|
-.			|_______________|_______________|___________________|
-	
+		- MIDI Channel 15
 		
+		[Root Note(Musical note)-->Mode selected]
+		- NOTE 2(D)-->24
+		- NOTE 3(D#)-->12
+		- NOTE 4(E)-->6
+		- NOTE 5(F)-->4
+		- NOTE 6(F#)-->2
+		- NOTE 7(G)-->1
+		- NOTE 8(G#)-->36
+		- NOTE 9(A)-->48
+		- NOTE 10(A#)-->52
+		- NOTE 11(B)-->96
 
