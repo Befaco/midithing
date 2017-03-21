@@ -32,7 +32,8 @@
 
 VoiceSelector Selector;
 static int countCLOCK = 1;
-static int ppqnCLOCK = 24;
+//static int ppqnCLOCK = 24;
+int ppqnCLOCK = 24;
 static byte MIDIRun = 0; // Set to 0 to init in stop condition
 
 void HandleNoteOn(byte channel, byte pitch, byte velocity)

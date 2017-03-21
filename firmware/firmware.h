@@ -51,7 +51,7 @@ enum VoiceModes {
   DUOLAST,
   DUOHIGH,
   DUOLOW,
-  MIDIMODE_LAST
+  MIDIMODE_LAST,
 };
 
 //

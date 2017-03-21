@@ -28,6 +28,9 @@
 MIDICV Voice[4];
 int NumVoices = 0; // Number of MIDI channels in use
 int VoiceMode = QUADMIDI; // MIDI mode Set to quad mode by default
+bool VoiceOverlap = false;
+byte LastVel = 0;
+byte LastNote = 0;
 
 // Actions to perform for Note On
 void MIDICV::processNoteOn(byte pitch, byte velocity)
@@ -196,16 +199,30 @@ void MIDICV::playNote(byte note, byte plvelocity)
   }
 
   if (plvelocity == 0) { //NOTE OFF
+    if ( !VoiceOverlap ) {
+      Retrig[gatePin].NoteOffTrig = true;
+    }
     playNoteOff();
   } else if (gatePin != -1) {
-    digitalWrite(gatePin, HIGH);
+    if ( !VoiceOverlap && !IsPolyMode() && plvelocity > 0 && LastVel > 0 && note != LastNote && !Retrig[gatePin].DoRetrig) { //&& gatePin != -1 ) {
+      Retrig[gatePin].DoRetrig = true;
+      //digitalWrite(gatePin, LOW);
+    } else {
+      digitalWrite(gatePin, HIGH);
+    }
   }
+
+  LastNote = note;
+  LastVel = plvelocity;
+
 }
 
 // All Notes off
 void MIDICV::playNoteOff(void)
 {
   if (gatePin != -1) {
+    Retrig[gatePin].NoteOffTrig = true;
+    //RetrigProcess();
     digitalWrite(gatePin, LOW);
   }
 }
@@ -394,11 +411,23 @@ int ReadMIDIeeprom(void)
   //return -1;
   MIDICV tempMIDI;
   MultiPointConv tempConv;
-  int numVoices, voiceMode;
+  int numVoices, voiceMode, lppqnCLOCK;
+  bool voiceOverlap;
   int i;
+  int offset = 0;
 
-  eeprom_read_block((void *)&numVoices, (void *)0, sizeof(numVoices));
-  eeprom_read_block((void *)&voiceMode, (void *)sizeof(int), sizeof(voiceMode));
+  eeprom_read_block((void *)&numVoices, (void *)offset, sizeof(numVoices));
+  offset = sizeof(int);
+
+  eeprom_read_block((void *)&voiceMode, (void *)offset, sizeof(voiceMode));
+  offset = offset + sizeof(int);
+
+  eeprom_read_block((void *)&voiceOverlap, (void *)offset, sizeof(voiceOverlap));
+  offset = offset + sizeof(bool);
+
+  eeprom_read_block((void *)&lppqnCLOCK, (void *)offset, sizeof(lppqnCLOCK));
+  offset = offset + sizeof(int);
+
 #ifdef PRINTDEBUG
   Serial.print("Read EEPROM Num Voices");
   Serial.print(numVoices);
@@ -414,7 +443,7 @@ int ReadMIDIeeprom(void)
 
   for (i = 0; i < 4; i++) {
     eeprom_read_block((void *)&tempConv,
-                      (void *)(sizeof(int) * 2 + i * (sizeof(tempConv) + sizeof(tempMIDI))),
+                      (void *)(offset + i * (sizeof(tempConv) + sizeof(tempMIDI))),
                       sizeof(tempConv));
     // stored in Pitch Only if EEPROM values for rangeDAC are correct
     if (i == 0) {
@@ -428,7 +457,7 @@ int ReadMIDIeeprom(void)
     }
 
     eeprom_read_block((void *)&tempMIDI,
-                      (void *)(sizeof(int) * 2 + sizeof(tempConv) + i *
+                      (void *)(offset + sizeof(tempConv) + i *
                                (sizeof(tempConv) + sizeof(tempMIDI))),
                       sizeof(tempMIDI));
     memcpy(&Voice[i], &tempMIDI, sizeof(Voice[i]));
@@ -447,6 +476,8 @@ int ReadMIDIeeprom(void)
   }
   NumVoices = numVoices;
   VoiceMode = voiceMode;
+  VoiceOverlap = voiceOverlap;
+  ppqnCLOCK = lppqnCLOCK;
 
   return (NumVoices);
 }
@@ -456,6 +487,7 @@ void WriteMIDIeeprom(void)
 {
   //return;
   int i;
+  int offset = 0;
 #ifdef PRINTDEBUG
   Serial.println("Write MIDI");
   Serial.print("Num Voices: ");
@@ -465,19 +497,29 @@ void WriteMIDIeeprom(void)
 #endif
 
   // Store in EEPROM number of channels and MIDI mode
-  eeprom_write_block((void *)&NumVoices, (void *)0, sizeof(NumVoices));
-  eeprom_write_block((void *)&VoiceMode, (void *)sizeof(int), sizeof(VoiceMode));
+  eeprom_write_block((void *)&NumVoices, (void *)offset, sizeof(NumVoices));
+  offset = sizeof(int);
+
+  eeprom_write_block((void *)&VoiceMode, (void *)offset, sizeof(VoiceMode));
+  offset = offset + sizeof(int);
+
+  eeprom_write_block((void *)&VoiceOverlap, (void *)offset, sizeof(VoiceOverlap));
+  offset = offset + sizeof(bool);
+
+  eeprom_write_block((void *)&ppqnCLOCK, (void *)offset, sizeof(ppqnCLOCK));
+  offset = offset + sizeof(int);
+
   // Store DAC channels and MIDI config
   for (i = 0; i < 4; i++) {
     if (i == 0) {
       DACConv[i].rangeDAC = 4093;
     }
     eeprom_write_block((const void *)&DACConv[i],
-                       (void *)(sizeof(NumVoices) * 2 + i *
+                       (void *)(offset + i *
                                 (sizeof(DACConv[i]) + sizeof(Voice[i]))),
                        sizeof(DACConv[i]));
     eeprom_write_block((const void *)&Voice[i],
-                       (void *)(sizeof(NumVoices) * 2 + sizeof(DACConv[i]) + i *
+                       (void *)(offset + sizeof(DACConv[i]) + i *
                                 (sizeof(Voice[i]) + sizeof(DACConv[i]))), sizeof(Voice[i]));
     /*
        #ifdef PRINTDEBUG
@@ -492,6 +534,11 @@ void WriteMIDIeeprom(void)
        #endif
     */
   }
+}
+
+void SetOverlap(bool overlap) {
+  VoiceOverlap = overlap;
+  WriteMIDIeeprom();
 }
 
 // Set default MIDI properties manually
@@ -514,6 +561,7 @@ void SetVoiceMode(int mode)
   switch (mode) {
     case MONOMIDI:
       NumVoices = 1;
+      //VoiceOverlap = false;
       Voice[0].pitchDAC = &DACConv[0];
       Voice[0].velDAC = &DACConv[1];
       Voice[0].bendDAC = &DACConv[2];
@@ -528,6 +576,7 @@ void SetVoiceMode(int mode)
       break;
     case DUALMIDI:
       NumVoices = 2;
+      //VoiceOverlap = false;
       Voice[0].pitchDAC = &DACConv[0];
       Voice[0].velDAC = &DACConv[1];
       Voice[0].gatePin = PINGATE;
@@ -539,6 +588,7 @@ void SetVoiceMode(int mode)
       break;
     case QUADMIDI:
       NumVoices = 4;
+      //VoiceOverlap = false;
       Voice[0].pitchDAC = &DACConv[0];
       Voice[0].gatePin = PINGATE;
       Voice[0].midiChannel = 1;
@@ -557,6 +607,7 @@ void SetVoiceMode(int mode)
     case DUOHIGH:
     case DUOLOW:
       NumVoices = 2;
+      //VoiceOverlap = false;
       Voice[0].pitchDAC = &DACConv[0];
       Voice[0].velDAC = &DACConv[1];
       Voice[0].gatePin = PINGATE;
@@ -571,6 +622,7 @@ void SetVoiceMode(int mode)
     case POLYHIGH:
     case POLYLOW:
       NumVoices = 4;
+      //VoiceOverlap = false;
       Voice[0].pitchDAC = &DACConv[0];
       Voice[0].gatePin = PINGATE;
       Voice[0].midiChannel = 1;

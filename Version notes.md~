@@ -1,10 +1,7 @@
 # MIDI Thing
 Firmware for the [Befaco](http://befaco.org) Eurorack MIDI module (MIDI Thing).
 
-Branch coded by Numelar (albertonafu@gmail.com)
-Branch developed from Polyphony branch 
-
-- Version V2 Beta based on Polyphonic branch by Jeremy Bernstein.
+- Version V2 Beta based on Polyphonic mode
 
 # Changes in PolyXp Duo version (v2)
 

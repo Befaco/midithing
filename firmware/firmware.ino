@@ -46,6 +46,15 @@ byte LearnStep = 0;
 Blinker Blink((byte)PINLED);
 Blinker Gates[10];
 
+struct RetrigCycle {
+  bool DoRetrig = false;
+  bool RetrigStarted = false;
+  unsigned long CycleLastTime = 0;
+  bool NoteOffTrig = false;
+};
+
+RetrigCycle Retrig[5];
+
 Bounce Bouncer = Bounce(); // will be configured in setup()
 unsigned long BouncerLastTime = 0;
 
@@ -132,10 +141,12 @@ void setup()
     // Set Mode manually
     //SetVoiceMode(MONOMIDI);
     //SetVoiceMode(DUALMIDI);
-    //SetVoiceMode(QUADMIDI);
+    SetVoiceMode(QUADMIDI);
+    SetOverlap(false);
+    ppqnCLOCK = 24;
     //SetVoiceMode(POLYFIRST);
     //SetVoiceMode(PERCTRIG);
-    SetVoiceMode(DUOLOW);
+    //SetVoiceMode(DUOLOW);
   }
 
   // LDAC pin must be grounded for normal operation.
@@ -167,9 +178,9 @@ void setup()
   Blink.setBlink(0, 0, 0);
   Blink.setBlink(50, 50, 3, PINCLOCK);
   delay(200);
-/*  Blink.setBlink(0, 0, 0);
-  Blink.setBlink(50, 50, 3, PINSTARTSTOP);
-  delay(200);*/
+  /*  Blink.setBlink(0, 0, 0);
+    Blink.setBlink(50, 50, 3, PINSTARTSTOP);
+    delay(200);*/
 
   Blink.setBlink(0, 0, 0);
 
@@ -180,7 +191,6 @@ void setup()
 void loop()
 {
   // put your main code here, to run repeatedly:
-
   MIDI.read();
 
   // handle blinks
@@ -188,7 +198,6 @@ void loop()
   for (int i = 0; i < 10; i++) {
     Gates[i].playBlink();
   }
-
   // Cal/Learn Button
   if (Bouncer.update()) { // button state changed
     unsigned long now = millis();
@@ -226,6 +235,12 @@ void loop()
       DoCalCycle();
     }
   }
+
+if (LearnMode == NORMALMODE){
+  // Retrigger Functionality
+  RetrigProcess();
+}
+
 }
 
 //////////////////////////////////////////////
@@ -255,7 +270,7 @@ void BlinkOK(void) {
 }
 
 void BlinkKO(void) {
-  //XXX BLINK ERROR
+  // BLINK ERROR
   Blink.setBlink(0, 0, 0);
   Blink.setBlink(0, 0, 0, PINLED);
   Blink.setBlink(100, 1, 1, PINSTARTSTOP);
@@ -264,5 +279,48 @@ void BlinkKO(void) {
   Blink.setBlink(100, 1, 1, PINCLOCK);
   delay(200);
   Blink.setBlink(0, 0, 0);
+}
+
+static void RetrigProcess() {
+
+  unsigned long now = millis();
+  unsigned long noteOffDuration = 0;
+
+
+  if (VoiceOverlap == false ) {
+    for (int i = 1; i < 5; i++) {
+      if (Retrig[i].DoRetrig == true && Retrig[i].NoteOffTrig == false) {
+
+        //noteOffDuration = now - Retrig[i].CycleLastTime;
+
+        //Note off first time
+        if (Retrig[i].RetrigStarted == false) {
+
+          Retrig[i].RetrigStarted = true;
+          Retrig[i].CycleLastTime = now;
+          digitalWrite(i, LOW);
+
+        } else {
+          noteOffDuration = now - Retrig[i].CycleLastTime;
+          //if (noteOffDuration >= 50) {
+            if (noteOffDuration >= 5) {
+            Retrig[i].DoRetrig = false;
+            Retrig[i].RetrigStarted = false;
+            Retrig[i].CycleLastTime = 0;
+            digitalWrite(i, HIGH);
+          } else {
+            digitalWrite(i, LOW);
+          }
+        }
+      }
+
+      if (Retrig[i].NoteOffTrig == true) {
+        digitalWrite(i, LOW);
+        Retrig[i].NoteOffTrig =false;
+        Retrig[i].DoRetrig = false;
+       Retrig[i].RetrigStarted = false;
+      }
+    }
+  }
 }
 

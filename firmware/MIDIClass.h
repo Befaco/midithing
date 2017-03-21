@@ -35,6 +35,7 @@ void AllNotesOff(void);
 int ReadMIDIeeprom(void);
 void WriteMIDIeeprom(void);
 void SetVoiceMode(int mode);
+void SetOverlap(bool overlap);
 // Learn mode
 void DoLearnCycle(void);
 void EnterLearnMode(void);
@@ -51,18 +52,22 @@ class MIDICV;
 extern MIDICV Voice[4]; // Define up to four MIDI channels
 extern int NumVoices; // Number of MIDI channels in use
 extern int VoiceMode; // MIDI mode Set to quad mode by default
-
+extern bool VoiceOverlap; // Overlap option for mono modes
+extern int ppqnCLOCK;
+extern long VoiceOVLTime;
+extern byte LastVel;
+extern byte LastNote;
 #define MAXNOTES 8
 
 static bool IsPolyMode() {
   return (   VoiceMode == POLYFIRST
-          || VoiceMode == POLYLAST
-          || VoiceMode == POLYHIGH
-          || VoiceMode == POLYLOW
-          || VoiceMode == DUOFIRST
-          || VoiceMode == DUOLAST
-          || VoiceMode == DUOHIGH
-          || VoiceMode == DUOLOW);
+             || VoiceMode == POLYLAST
+             || VoiceMode == POLYHIGH
+             || VoiceMode == POLYLOW
+             || VoiceMode == DUOFIRST
+             || VoiceMode == DUOLAST
+             || VoiceMode == DUOHIGH
+             || VoiceMode == DUOLOW);
 }
 
 static bool IsPercMode() {
@@ -162,6 +167,7 @@ class MIDICV {
     byte midiChannel_old = 0; // Initial channel
     byte minInput_old    = 0;
     byte gatePin = PINGATE;
+
     NoteEventInfo notes;
     // Var MIDI-DAC
     class MultiPointConv *pitchDAC, *velDAC, *bendDAC, *modDAC;
@@ -256,20 +262,20 @@ class VoiceSelector {
 
       if (!poolCount) return false;
       switch (VoiceMode) {
-        case DUOFIRST:
         case POLYFIRST:
+        case DUOFIRST:
           pool_.getEvent(0, pitch);
           removeFromPool(*pitch);
           return true;
           break;
-        case DUOLAST:
         case POLYLAST:
+        case DUOLAST:
           pool_.getLastEvent(pitch);
           removeFromPool(*pitch);
           return true;
           break;
-        case DUOHIGH:
         case POLYHIGH:
+        case DUOHIGH:
           nextNote = 0;
           for (int i = 0; i < poolCount; i++) {
             byte testNote;
@@ -282,8 +288,8 @@ class VoiceSelector {
           removeFromPool(*pitch);
           return true;
           break;
-        case DUOLOW:
         case POLYLOW:
+        case DUOLOW:
           nextNote = 127;
           for (int i = 0; i < poolCount; i++) {
             byte testNote;
@@ -469,21 +475,21 @@ class VoiceSelector {
       }
 
       switch (VoiceMode) {
-        case DUOFIRST:
-        case POLYFIRST: // the last-played note is added to the pool, available only if a channel is freed
+        case POLYFIRST:
+        case DUOFIRST: // the last-played note is added to the pool, available only if a channel is freed
           addToPool(pitch);
           return -1;
           break;
-        case DUOLAST:
-        case POLYLAST: // the last-played note replaces the oldest playing note
+        case POLYLAST:
+        case DUOLAST: // the last-played note replaces the oldest playing note
           return getPolyLastTarget(channel, pitch, velocity);
           break;
-        case DUOHIGH:
         case POLYHIGH:
+        case DUOHIGH:
           return getPolyHighTarget(channel, pitch, velocity);
           break;
-        case DUOLOW:
         case POLYLOW:
+        case DUOLOW:
           return getPolyLowTarget(channel, pitch, velocity);
           break;
         default: return -1;
