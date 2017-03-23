@@ -236,10 +236,10 @@ void loop()
     }
   }
 
-if (LearnMode == NORMALMODE){
-  // Retrigger Functionality
-  RetrigProcess();
-}
+  if (LearnMode == NORMALMODE) {
+    // Retrigger Functionality
+    RetrigProcess();
+  }
 
 }
 
@@ -289,9 +289,8 @@ static void RetrigProcess() {
 
   if (VoiceOverlap == false ) {
     for (int i = 1; i < 5; i++) {
+      //Retrig only performed when an existent gate is running (values set in MIDIClass.ino --> MIDICV::playNote )
       if (Retrig[i].DoRetrig == true && Retrig[i].NoteOffTrig == false) {
-
-        //noteOffDuration = now - Retrig[i].CycleLastTime;
 
         //Note off first time
         if (Retrig[i].RetrigStarted == false) {
@@ -302,8 +301,8 @@ static void RetrigProcess() {
 
         } else {
           noteOffDuration = now - Retrig[i].CycleLastTime;
-          //if (noteOffDuration >= 50) {
-            if (noteOffDuration >= 5) {
+          //Value of comparision (20) is the delay betwheen retrig action
+          if (noteOffDuration >= 20) {
             Retrig[i].DoRetrig = false;
             Retrig[i].RetrigStarted = false;
             Retrig[i].CycleLastTime = 0;
@@ -316,9 +315,9 @@ static void RetrigProcess() {
 
       if (Retrig[i].NoteOffTrig == true) {
         digitalWrite(i, LOW);
-        Retrig[i].NoteOffTrig =false;
+        Retrig[i].NoteOffTrig = false;
         Retrig[i].DoRetrig = false;
-       Retrig[i].RetrigStarted = false;
+        Retrig[i].RetrigStarted = false;
       }
     }
   }

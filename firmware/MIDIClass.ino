@@ -204,9 +204,8 @@ void MIDICV::playNote(byte note, byte plvelocity)
     }
     playNoteOff();
   } else if (gatePin != -1) {
-    if ( !VoiceOverlap && !IsPolyMode() && plvelocity > 0 && LastVel > 0 && note != LastNote && !Retrig[gatePin].DoRetrig) { //&& gatePin != -1 ) {
+    if ( !VoiceOverlap && !IsPolyMode() && plvelocity > 0 && LastVel > 0 && note != LastNote && !Retrig[gatePin].DoRetrig) {
       Retrig[gatePin].DoRetrig = true;
-      //digitalWrite(gatePin, LOW);
     } else {
       digitalWrite(gatePin, HIGH);
     }
