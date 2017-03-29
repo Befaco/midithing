@@ -143,7 +143,7 @@ void setup()
     //SetVoiceMode(DUALMIDI);
     SetVoiceMode(QUADMIDI);
     SetOverlap(false);
-    ppqnCLOCK = 24;
+    ppqnCLOCK = 6;
     //SetVoiceMode(POLYFIRST);
     //SetVoiceMode(PERCTRIG);
     //SetVoiceMode(DUOLOW);

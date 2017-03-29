@@ -159,7 +159,8 @@ void HandleControlChange(byte channel, byte number, byte value)
 void HandleStart(void)
 {
   MIDIRun = 1;
-  countCLOCK = 0;
+  //countCLOCK = 0;
+  countCLOCK = ppqnCLOCK;
   Gates[9].setBlink(TRIGSTART, 1, 1);
   //digitalWrite(PINSTARTSTOP, HIGH);
 #ifdef PRINTDEBUG

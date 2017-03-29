@@ -90,7 +90,7 @@ Firmware for the [Befaco](http://befaco.org) Eurorack MIDI module (MIDI Thing).
 		
 		[Root Note(Musical note)-->Mode selected]
 		- NOTE 0(C)-->Legato		|
-		- NOTE 1(C#)-->Retrigger
+		- NOTE 2(D)-->Retrigger
 
 
 		- Legato active         - Gate is not retriggered when one note is hold and insert another note.
@@ -111,14 +111,10 @@ Firmware for the [Befaco](http://befaco.org) Eurorack MIDI module (MIDI Thing).
 		- MIDI Channel 15
 		
 		[Root Note(Musical note)-->Mode selected]
-		- NOTE 2(D)-->24
-		- NOTE 3(D#)-->12
-		- NOTE 4(E)-->6
-		- NOTE 5(F)-->4
-		- NOTE 6(F#)-->2
-		- NOTE 7(G)-->1
-		- NOTE 8(G#)-->36
-		- NOTE 9(A)-->48
-		- NOTE 10(A#)-->52
-		- NOTE 11(B)-->96
+
+		- NOTE 2(C#)-->24
+		- NOTE 3(D#)-->48
+		- NOTE 6(F#)-->12
+		- NOTE 8(G#)-->6
+		- NOTE 10(A#)-->1
 

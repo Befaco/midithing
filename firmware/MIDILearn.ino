@@ -201,47 +201,27 @@ byte CalProcessNote(byte channel, byte pitch, byte velocity)
         lv_return = 1;
         break;
       case 1: // C#
-        SetOverlap(false);
-        lv_return = 1;
-        break;
-      case 2: //D
         ppqnCLOCK = 24;
         lv_return = 1;
         break;
+      case 2: //D
+        SetOverlap(false);
+        lv_return = 1;
+        break;
       case 3: //D#
-        ppqnCLOCK = 12;
-        lv_return = 1;
-        break;
-      case 4: // E
-        ppqnCLOCK = 6;
-        lv_return = 1;
-        break;
-      case 5: // F
-        ppqnCLOCK = 4;
-        lv_return = 1;
-        break;
-      case 6: // F#
-        ppqnCLOCK = 2;
-        lv_return = 1;
-        break;
-      case 7: // G
-        ppqnCLOCK = 1;
-        lv_return = 1;
-        break;
-      case 8: // G#
-        ppqnCLOCK = 36;
-        lv_return = 1;
-        break;
-      case 9: // A
         ppqnCLOCK = 48;
         lv_return = 1;
         break;
-      case 10: // A#
-        ppqnCLOCK = 52;
+      case 6: // F#
+        ppqnCLOCK = 12;
         lv_return = 1;
         break;
-      case 11: // B
-        ppqnCLOCK = 96;
+      case 8: // G#
+        ppqnCLOCK = 6;
+        lv_return = 1;
+        break;
+      case 10: // A#
+        ppqnCLOCK = 3;
         lv_return = 1;
         break;
       default:
