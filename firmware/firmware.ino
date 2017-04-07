@@ -271,10 +271,10 @@ void BlinkOK(void) {
 
 void BlinkKO(void) {
   // BLINK ERROR
-  Blink.setBlink(0, 0, 0);
+  //Blink.setBlink(0, 0, 0);
   Blink.setBlink(0, 0, 0, PINLED);
-  Blink.setBlink(100, 1, 1, PINSTARTSTOP);
-  delay(200);
+  //Blink.setBlink(100, 1, 1, PINSTARTSTOP);
+  //delay(200);
   Blink.setBlink(0, 0, 0);
   Blink.setBlink(100, 1, 1, PINCLOCK);
   delay(200);
