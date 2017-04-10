@@ -267,7 +267,7 @@ int CheckActiveMIDI(byte channel, byte pitch)
   }
   // In other modes, check if received one is an active channel
   for (int i = 0; i < MAXNumMIDI; i++) {
-    if (ChanMIDI[i].midiChannel == channel && ChanMIDI[i].PitchDAC->minInput < pitch) {
+    if (ChanMIDI[i].midiChannel == channel && ChanMIDI[i].PitchDAC->minInput <= pitch) {
       return (i);
     }
   }
