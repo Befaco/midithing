@@ -132,11 +132,9 @@ byte CalProcessNote(byte channel, byte pitch, byte velocity)
 {
   byte lv_return = 1;
 
-  if (channel == 11 || channel == 12 || channel == 13 || channel == 14) { // Channels 1-4 for DAC calibration 0-3
-    channel = channel - 10;
+  if (channel == 1 || channel == 2 || channel == 3 || channel == 4) { // Channels 1-4 for DAC calibration
     lv_return = (DACConv[channel - 1].Processnote(channel, pitch, velocity));
-    channel = channel + 10;
-  } else if (channel >= 1 && channel <= 10) {
+  } else if (channel >= 5 && channel <= 15) {
 
     pitch = getElementalPitch(pitch);
 
@@ -193,7 +191,7 @@ byte CalProcessNote(byte channel, byte pitch, byte velocity)
         lv_return = 0;
         break;
     }
-  } else if (channel == 15) {
+  } else if (channel == 16) {
 
     pitch = getElementalPitch(pitch);
     switch (pitch) {
@@ -236,16 +234,18 @@ byte CalProcessNote(byte channel, byte pitch, byte velocity)
   switch (lv_return) {
     case 1:
       BlinkOK();
-      if ( (channel >= 1 && channel <= 10) || (channel == 15) ){
+      if ( (channel >= 5 && channel <= 15) || (channel == 16) ){
         EndCalMode();
       }else{
         Blink.setBlink(100, 0, -1, PINLED2);
       }
       break;
     case 0:
+      if ( (channel >= 5 && channel <= 15) || (channel == 16) ){
       BlinkKO();
       Blink.setBlink(0, 0, 0);
       Blink.setBlink(100, 0, -1, PINLED2);
+}
       break;
     default:
       //do nothing
