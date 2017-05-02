@@ -45,13 +45,13 @@ Firmware for the [Befaco](http://befaco.org) Eurorack MIDI module (MIDI Thing).
 		ends mode if correct midi input is made.
 		
 	- Changed: in MENU mode, Calibration is now possible on:
-		- 11 for voice 1
-		- 12 for voice 2
-		- 13 for voice 3
-		- 14 for voice 4
+		- 1 for voice 1
+		- 2 for voice 2
+		- 3 for voice 3
+		- 4 for voice 4
 		
 	- Changed: in MENU mode, configuration (MIDI Mode) is now possible on every octave higher than 0 
-		and can be done in every single note(depending on number of modes) on channels from 1 to 10
+		and can be done in every single note(depending on number of modes) on channels from 5 to 15
 	
 	- Added: duophonic modes (listed in next point), where:
 		- Voice 1
@@ -86,7 +86,7 @@ Firmware for the [Befaco](http://befaco.org) Eurorack MIDI module (MIDI Thing).
 		- NOTE 11(B)-->POLYLOW
 
 	- Added: in MENU mode, change Legato and Gate Retrigger mode (only in monophonic modes), this modes are stored in memory: 
-		- MIDI Channel 15
+		- MIDI Channel 16
 		
 		[Root Note(Musical note)-->Mode selected]
 		- NOTE 0(C)-->Legato		|
