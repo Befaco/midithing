@@ -43,7 +43,7 @@ void EnterLearnMode(void);
 void DoCalCycle(void);
 void EnterCalMode(void);
 void EndCalMode(void);
-byte CalProcessNote(byte channel, byte pitch, byte velocity);
+byte MenuModeHandle(byte channel, byte pitch, byte velocity);
 byte getElementalPitch(byte pitch);
 int PercussionNoteGate(byte pitch);
 
@@ -215,6 +215,7 @@ class VoiceSelector {
 
     void noteOff(int channel, byte pitch)
     {
+     
       Voice[channel].processNoteOff(pitch);
       removeFromPlaying(pitch);
       if (IsPolyMode() && popNextNoteFromPool(&pitch)) {

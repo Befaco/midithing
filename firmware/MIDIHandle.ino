@@ -39,18 +39,18 @@ static byte MIDIRun = 0; // Set to 0 to init in stop condition
 void HandleNoteOn(byte channel, byte pitch, byte velocity)
 {
   int MIDIactive = -1;
-
   // If in learn mode, catch info
   if (LearnMode == ENTERLEARN && velocity > 0) {
     Voice[LearnStep].LearnThis(channel, pitch, velocity);
     return;
   }
   // If in cal mode, adjust notes
-  if (LearnMode == ENTERCAL && velocity > 0) {
-
-    if (CalProcessNote(channel, pitch, velocity)) {
-      return;  // do not play note if calibration key pressed
-    }
+  if (   LearnMode == ENTERCAL 
+      && velocity > 0          
+      && checkMenuMode(pitch) == CALIBRATION 
+      && MenuModeHandle(channel, pitch, velocity)) {
+      //Calibration
+        return;  // do not play note if calibration key pressed
   }
 
   // Check if received channel is any active MIDI
@@ -159,10 +159,8 @@ void HandleControlChange(byte channel, byte number, byte value)
 void HandleStart(void)
 {
   MIDIRun = 1;
-  //countCLOCK = 0;
   countCLOCK = ppqnCLOCK;
   Gates[9].setBlink(TRIGSTART, 1, 1);
-  //digitalWrite(PINSTARTSTOP, HIGH);
 #ifdef PRINTDEBUG
   Serial.println("MIDI Start");
 #endif
@@ -173,7 +171,6 @@ void HandleContinue(void)
   MIDIRun = 1;
   countCLOCK = 0;
   Gates[9].setBlink(TRIGSTART, 1, 1);
-  //  digitalWrite(PINSTARTSTOP, HIGH);
 #ifdef PRINTDEBUG
   Serial.println("MIDI Continue");
 #endif
@@ -183,7 +180,6 @@ void HandleStop(void)
 {
   MIDIRun = 0;
   countCLOCK = 0;
-  //digitalWrite(PINSTARTSTOP, LOW);
 #ifdef PRINTDEBUG
   Serial.println("MIDI Stop");
 #endif
@@ -192,7 +188,6 @@ void HandleStop(void)
 void HandleClock(void)
 {
   //( !MIDIRun) return; // Only when MIDI run command received
-
   if (countCLOCK < ppqnCLOCK) {
     countCLOCK++;
   } else {
@@ -200,13 +195,6 @@ void HandleClock(void)
     // Send trigger to CLOCK port
     Gates[4].setBlink(TRIGCLOCK, 1, 1);
   }
-  /*
-     digitalWrite( PINCLOCK, HIGH);
-     //digitalWrite( PINLED, HIGH);
-     delayMicroseconds(2000); // 2 milliseconds delay
-     digitalWrite( PINCLOCK, LOW);
-     //digitalWrite( PINLED, LOW);
-  */
 }
 
 #endif  //STARTSTOPCONT

@@ -106,4 +106,3 @@ void Blinker::playBlink(void)
     }
   }
 }
-

@@ -37,12 +37,14 @@ void EnterLearnMode(void)
   // Set Learn mode flag
   LearnMode = ENTERLEARN;
   LearnStep = 0;
+  
+  // All Notes off
+  AllNotesOff();
+  
   // Init blinker
   Blink.setBlink(100, 0, -1, PINLED);
   Blink.setBlink(100, 0, -1, PINGATE);
-  // All Notes off
-  AllNotesOff();
-
+  
   // Init timer
   LearnInitTime = millis();
 #ifdef PRINTDEBUG
@@ -53,19 +55,7 @@ void EnterLearnMode(void)
 // Learn Mode Cycle function
 void DoLearnCycle(void)
 {
-  unsigned long current = millis();
-
-  /* // 10 seconds learn time  "Only cancel with button
-    if (current > LearnInitTime + 10000) {
-     CancelLearnMode();
-       // Set normal mode
-       LearnMode = NORMALMODE;
-       // Turn off LED blink
-       Blink.setBlink(0, 0, 0);
-       Blink.setBlink(0, 0, 0, PINLED);
-       // Store value in EEPROM
-       WriteMIDIeeprom();*/
-
+  Blink.setBlink(100, 0, -1, PINLED);
 #ifdef PRINTDEBUG
   Serial.println("End Learn Mode");
 #endif
@@ -74,16 +64,17 @@ void DoLearnCycle(void)
 
 //////////////////////////////
 // Initialize Cal Mode
+/////////////////////////////
 void EnterCalMode(void)
 {
   // Set Learn mode flag
   LearnMode = ENTERCAL;
-  // Init blinker
-  //Blink.setBlink(500, 500, -1, PINLED2);
-  Blink.setBlink(100, 0, -1, PINLED2);
 
   // All Notes off
   AllNotesOff();
+  
+  // Init blinker
+  Blink.setBlink(100, 0, -1, PINLED2);
 
   // Set mode to 4 channels
   SetVoiceMode(QUADMIDI);
@@ -98,6 +89,7 @@ void EnterCalMode(void)
 // Cal Mode Cycle function
 void DoCalCycle(void)
 {
+  Blink.setBlink(100, 0, -1, PINLED2);
   unsigned long current = millis();
 
   // After 55 seconds without receiving a note, exit calibration
@@ -114,140 +106,56 @@ void DoCalCycle(void)
 
 void EndCalMode(void)
 {
-
+  BlinkSaving();
   // Set normal mode
   LearnMode = NORMALMODE;
   // Store in EEPROM
   WriteMIDIeeprom();
   // Turn off LED blink
-  Blink.setBlink(0, 0, 0);
-  Blink.setBlink(0, 0, 0, PINLED2);
+  ResetBlink();
 
 #ifdef PRINTDEBUG
   Serial.println("End Cal Mode");
 #endif
 }
 
-byte CalProcessNote(byte channel, byte pitch, byte velocity)
+//////////////////////////////
+// Menu mode handle
+/////////////////////////////
+byte MenuModeHandle(byte channel, byte pitch, byte velocity)
 {
   byte lv_return = 1;
-
-  if (channel >= 1 && channel <=4 ) { // Channels 1-4 for DAC calibration
-    lv_return = (DACConv[channel - 1].Processnote(channel, pitch, velocity));
-  } else if (channel >= 5 && channel <= 15) {
-
-    pitch = getElementalPitch(pitch);
-
-    switch (pitch) {
-      case 0: // C
-        SetVoiceMode(MONOMIDI);
-        lv_return = 1;
-        break;
-      case 1: // C#
-        SetVoiceMode(DUALMIDI);
-        lv_return = 1;
-        break;
-      case 2: // D
-        SetVoiceMode(QUADMIDI);
-        lv_return = 1;
-        break;
-      case 3: // D#
-        SetVoiceMode(PERCTRIG);
-        lv_return = 1;
-        break;
-      case 4: // E
-        SetVoiceMode(DUOFIRST);
-        lv_return = 1;
-        break;
-      case 5: // F
-        SetVoiceMode(DUOLAST);
-        lv_return = 1;
-        break;
-      case 6: // F#
-        SetVoiceMode(DUOHIGH);
-        lv_return = 1;
-        break;
-      case 7: // G
-        SetVoiceMode(DUOLOW);
-        lv_return = 1;
-        break;
-      case 8: // G#
-        SetVoiceMode(POLYFIRST);
-        lv_return = 1;
-        break;
-      case 9: // A
-        SetVoiceMode(POLYLAST);
-        lv_return = 1;
-        break;
-      case 10: // A#
-        SetVoiceMode(POLYHIGH);
-        lv_return = 1;
-        break;
-      case 11: // B
-        SetVoiceMode(POLYLOW);
-        lv_return = 1;
-        break;
-      default:
-        lv_return = 0;
-        break;
-    }
-  } else if (channel == 16) {
-
-    pitch = getElementalPitch(pitch);
-    switch (pitch) {
-      case 0: // C
-        SetOverlap(true);
-        lv_return = 1;
-        break;
-      case 1: // C#
-        ppqnCLOCK = 24;
-        lv_return = 1;
-        break;
-      case 2: //D
-        SetOverlap(false);
-        lv_return = 1;
-        break;
-      case 3: //D#
-        ppqnCLOCK = 48;
-        lv_return = 1;
-        break;
-      case 6: // F#
-        ppqnCLOCK = 12;
-        lv_return = 1;
-        break;
-      case 8: // G#
-        ppqnCLOCK = 6;
-        lv_return = 1;
-        break;
-      case 10: // A#
-        ppqnCLOCK = 3;
-        lv_return = 1;
-        break;
-      default:
-        lv_return = 0;
-        break;
-    }
-  } else {
-    lv_return = 0;
+  switch (checkMenuMode(channel)) {
+    case CALIBRATION:
+      // Channels 1-4 for DAC calibration 0-3
+      lv_return = (DACConv[channel - 1].Processnote(channel, pitch, velocity));
+      break;
+    case CHANGEMODE:
+      //Selection of voice MODE
+      lv_return = selectVoiceMode(pitch);
+      break;
+    case CHANGEOPTIONS:
+      //Options Selection
+      lv_return = selectOptions(pitch);
+      break;
+    default:
+      lv_return = 0;
+      break;
   }
-  Blink.setBlink(0, 0, 0);
+
+  ResetBlink();
   switch (lv_return) {
     case 1:
-      if ( (channel >= 5 && channel <= 15) || (channel == 16) ){
-        BlinkOK();
+      if ( checkMenuMode(channel) != CALIBRATION) {
         EndCalMode();
-      }else{
-        Blink.setBlink(100, 0, -1, PINLED2);
-        Blink.setBlink(100, 50, 3, PINLED);
+      } else {
+        BlinkOK();
       }
       break;
     case 0:
-      if ( (channel >= 5 && channel <= 15) || (channel == 16) ){
-        BlinkKO();
+      if ( checkMenuMode(channel) != CALIBRATION) {
+        BlinkKO();;
       }
-      Blink.setBlink(0, 0, 0);
-      Blink.setBlink(100, 0, -1, PINLED2);
-
       break;
     default:
       //do nothing
@@ -259,10 +167,11 @@ byte CalProcessNote(byte channel, byte pitch, byte velocity)
 
 byte getElementalPitch(byte pitch)
 {
-  while (pitch >= 12) {
-    pitch = pitch - 12;
+  byte lv_pitch = pitch;
+  while (lv_pitch >= 12) {
+    lv_pitch = lv_pitch - 12;
   }
-  return (pitch);
+  return (lv_pitch);
 }
 
 void InitLearnMode(void) {
@@ -273,11 +182,10 @@ void InitLearnMode(void) {
 
 void ConfirmLearnMode(void)
 {
-
+  BlinkSaving();
   for (int i = 0; i < 4; i++) {
     Voice[i].ResetOldLearn();
   }
-  BlinkOK();
   EndLearnMode();
 }
 
@@ -287,15 +195,131 @@ void EndLearnMode() {
   LearnStep = 0;
   // Store value in EEPROM
   WriteMIDIeeprom();
+  ResetBlink();
   return;
 }
 
 void CancelLearnMode(void)
 {
+  ResetBlink();
+  Blink.setBlink(100, 0, -1, PINCLOCK);
+  BlinkKO();
   for (int i = 0; i < 4; i++) {
     Voice[i].ResetLearn();
     Voice[i].ResetOldLearn();
   }
-  BlinkKO();
   EndLearnMode();
 }
+
+byte selectOptions(byte pitch)
+{
+  byte lv_pitch = pitch;
+  lv_pitch = getElementalPitch(pitch);
+  switch (lv_pitch) {
+    case 0: // C
+      SetOverlap(true);
+      return 1;
+      break;
+    case 1: // C#
+      ppqnCLOCK = 24;
+      return 1;
+      break;
+    case 2: //D
+      SetOverlap(false);
+      return 1;
+      break;
+    case 3: //D#
+      ppqnCLOCK = 48;
+      return 1;
+      break;
+    case 6: // F#
+      ppqnCLOCK = 12;
+      return 1;
+      break;
+    case 8: // G#
+      ppqnCLOCK = 6;
+      return 1;
+      break;
+    case 10: // A#
+      ppqnCLOCK = 3;
+      return 1;
+      break;
+    default:
+      return 0;
+      break;
+  }
+}
+
+byte selectVoiceMode(byte pitch)
+{
+  byte lv_pitch = pitch;
+
+  lv_pitch = getElementalPitch(pitch);
+
+  switch (lv_pitch) {
+    case 0: // C
+      SetVoiceMode(MONOMIDI);
+      return 1;
+      break;
+    case 1: // C#
+      SetVoiceMode(DUALMIDI);
+      return 1;
+      break;
+    case 2: // D
+      SetVoiceMode(QUADMIDI);
+      return 1;
+      break;
+    case 3: // D#
+      SetVoiceMode(PERCTRIG);
+      return 1;
+      break;
+    case 4: // E
+      SetVoiceMode(DUOFIRST);
+      return 1;
+      break;
+    case 5: // F
+      SetVoiceMode(DUOLAST);
+      return 1;
+      break;
+    case 6: // F#
+      SetVoiceMode(DUOHIGH);
+      return 1;
+      break;
+    case 7: // G
+      SetVoiceMode(DUOLOW);
+      return 1;
+      break;
+    case 8: // G#
+      SetVoiceMode(POLYFIRST);
+      return 1;
+      break;
+    case 9: // A
+      SetVoiceMode(POLYLAST);
+      return 1;
+      break;
+    case 10: // A#
+      SetVoiceMode(POLYHIGH);
+      return 1;
+      break;
+    case 11: // B
+      SetVoiceMode(POLYLOW);
+      return 1;
+      break;
+    default:
+      return 0;
+      break;
+  }
+}
+
+byte checkMenuMode( byte channel ) {
+
+  if (channel == 1 || channel == 2 || channel == 3 || channel == 4) {
+    return CALIBRATION;
+  } else if (channel >= 5 && channel <= 10) {
+    return CHANGEMODE;
+  } else if (channel == 16) {
+    return CHANGEOPTIONS;
+  }
+
+}
+

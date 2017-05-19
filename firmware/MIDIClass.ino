@@ -198,15 +198,24 @@ void MIDICV::playNote(byte note, byte plvelocity)
     SendvaltoDAC(velDAC->DACnum, voltage2);
   }
 
-  if (plvelocity == 0) { //NOTE OFF
-    if ( !VoiceOverlap ) {
-      Retrig[gatePin].NoteOffTrig = true;
+  if (LearnMode == NORMALMODE) {
+    //Retrig handle only in normalmode
+    if (plvelocity == 0) { //NOTE OFF
+      if ( !VoiceOverlap ) {
+        Retrig[gatePin].NoteOffTrig = true;
+      }
+      playNoteOff();
+    } else if (gatePin != -1) {
+      if ( !VoiceOverlap && !IsPolyMode() && plvelocity > 0 && LastVel > 0 && note != LastNote && !Retrig[gatePin].DoRetrig) {
+        Retrig[gatePin].DoRetrig = true;
+      } else {
+        digitalWrite(gatePin, HIGH);
+      }
     }
-    playNoteOff();
-  } else if (gatePin != -1) {
-    if ( !VoiceOverlap && !IsPolyMode() && plvelocity > 0 && LastVel > 0 && note != LastNote && !Retrig[gatePin].DoRetrig) {
-      Retrig[gatePin].DoRetrig = true;
-    } else {
+  } else {
+    if (plvelocity == 0) { //NOTE OFF
+      playNoteOff();
+    } else if (gatePin != -1) {
       digitalWrite(gatePin, HIGH);
     }
   }
@@ -220,8 +229,10 @@ void MIDICV::playNote(byte note, byte plvelocity)
 void MIDICV::playNoteOff(void)
 {
   if (gatePin != -1) {
-    Retrig[gatePin].NoteOffTrig = true;
-    //RetrigProcess();
+    if (LearnMode == NORMALMODE) {
+      Retrig[gatePin].NoteOffTrig = true;
+      //RetrigProcess();
+    }
     digitalWrite(gatePin, LOW);
   }
 }
@@ -251,9 +262,8 @@ void MIDICV::LearnThis(byte channel, byte pitch, byte velocity)
     LearnStep--;
     channelExists = true;
   }
-
-  Blink.setBlink(0, 0, 0);
-  Blink.setBlink(100, 0, -1, PINLED);
+  
+    Blink.setBlink(0, 0, 0);
   switch (LearnStep) {
     case 1:
       if (!channelExists) {
@@ -304,16 +314,8 @@ void MIDICV::LearnThis(byte channel, byte pitch, byte velocity)
         endLearn = true;
       }
       break;
-      /* default:
-         Blink.setBlink(100, 0, -1, PINSTARTSTOP);
-         delay(200);
-         Blink.setBlink(0, 0, 0);
-         Blink.setBlink(100, 1, 1, PINCLOCK);
-         delay(200);
-        break; */
   }
-
-  if (channelExists) {
+    if (channelExists) {
     return;
   }
 
@@ -322,8 +324,8 @@ void MIDICV::LearnThis(byte channel, byte pitch, byte velocity)
   if (endLearn == true) {
     ConfirmLearnMode();
   }
-
 }
+
 
 // All Notes off
 bool MIDICV::ChannelExists(byte channel, byte mininput, byte learnstep) {
@@ -534,7 +536,7 @@ void WriteMIDIeeprom(void)
     */
   }
 }
-
+//Retrig => Overlap=false
 void SetOverlap(bool overlap) {
   VoiceOverlap = overlap;
   WriteMIDIeeprom();
@@ -560,7 +562,6 @@ void SetVoiceMode(int mode)
   switch (mode) {
     case MONOMIDI:
       NumVoices = 1;
-      //VoiceOverlap = false;
       Voice[0].pitchDAC = &DACConv[0];
       Voice[0].velDAC = &DACConv[1];
       Voice[0].bendDAC = &DACConv[2];
@@ -575,7 +576,6 @@ void SetVoiceMode(int mode)
       break;
     case DUALMIDI:
       NumVoices = 2;
-      //VoiceOverlap = false;
       Voice[0].pitchDAC = &DACConv[0];
       Voice[0].velDAC = &DACConv[1];
       Voice[0].gatePin = PINGATE;
@@ -587,7 +587,6 @@ void SetVoiceMode(int mode)
       break;
     case QUADMIDI:
       NumVoices = 4;
-      //VoiceOverlap = false;
       Voice[0].pitchDAC = &DACConv[0];
       Voice[0].gatePin = PINGATE;
       Voice[0].midiChannel = 1;
@@ -606,7 +605,6 @@ void SetVoiceMode(int mode)
     case DUOHIGH:
     case DUOLOW:
       NumVoices = 2;
-      //VoiceOverlap = false;
       Voice[0].pitchDAC = &DACConv[0];
       Voice[0].velDAC = &DACConv[1];
       Voice[0].gatePin = PINGATE;
@@ -621,7 +619,6 @@ void SetVoiceMode(int mode)
     case POLYHIGH:
     case POLYLOW:
       NumVoices = 4;
-      //VoiceOverlap = false;
       Voice[0].pitchDAC = &DACConv[0];
       Voice[0].gatePin = PINGATE;
       Voice[0].midiChannel = 1;

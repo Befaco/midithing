@@ -76,8 +76,13 @@ byte MultiPointConv::Processnote(byte channel, byte pitch, byte velocity)
   if (val < 0) {
     return (0);
   }
+  
   if (val > 119) {
     val = 119;  // max 10 oct. = 120 notes
+  }
+
+  if (val == 1) {
+    return (0);
   }
 
   // Look for interval
@@ -86,8 +91,10 @@ byte MultiPointConv::Processnote(byte channel, byte pitch, byte velocity)
     return (0);
   }
 
+
   if (val == (interv + 1) * 6 - 1) { //decrease
     DACPoints[interv + 1]--;
+    //Selector.noteOn(channel, pitch, velocity);
   } else if (val == interv * 6 + 1) { //increase
     DACPoints[interv]++;
   } else {

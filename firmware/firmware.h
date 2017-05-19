@@ -35,6 +35,11 @@
 #define ENTERLEARN 1
 #define ENTERCAL 2
 
+//MODEmenu
+#define CALIBRATION 0
+#define CHANGEMODE 1
+#define CHANGEOPTIONS 2
+
 // MIDI Modes
 enum VoiceModes {
   MIDIMODE_INVALID = 0,
@@ -76,7 +81,9 @@ void HandleStop(void);
 void HandleClock(void);
 void BlinkOK(void);
 void BlinkKO(void);
-
+void ResetBlink(void);
+static void LightShow(unsigned long periodon, unsigned long periodoff, int times);
+static void PlayLightShowPin(unsigned long periodon, unsigned long periodoff, int times, int newpin = -1);
 // Timer functions
 #ifdef USETIMER
 void SetupTimer(unsigned int compTimer1);

@@ -58,3 +58,4 @@ extern Blinker Gates[10]; // Gates triggers
    void setBlink( unsigned long periodon, unsigned long periodoff, int times, byte color);
    };
 */
+

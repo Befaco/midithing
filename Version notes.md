@@ -3,55 +3,50 @@ Firmware for the [Befaco](http://befaco.org) Eurorack MIDI module (MIDI Thing).
 
 - Version V2 Beta based on Polyphonic mode
 
-# Changes in PolyXp Duo version (v2)
+# Changes in v2
 
 - Bug fixes:
 	- Learn mode min note play on next high note
 	
-	- Can't cancel Learn mode 
+	- Can't cancel Learn mode, now can cancel returning the learn to lastest value in memory. 
 	
 	- Learn mode in same channel for same min note can be done (incorrect keyboard split)
 
+	- In calibration mode, if root note (0V) is calibrated to higher voltage, can't be rectified to lower voltage. Now, root voltage note can't be changed.
+
 - Changes and improvements
-	- Added: lightshow at power up for Voice leds, Voice gates and clock check (leds and signals)
+	- Added: lightshow at power up for Voice leds, Voice gates, clock and start/stop check (leds and signals)
 	
 	- Added: visual feedback when save, cancel or error action is done:
-		- When save, LEARN and MODE leds blinks 
-		- When cancel or error CLOCK
+		- When save, LEARN and MODE leds stays on for a while. 
+		- When cancel or error CLOCK blink.
 		
-	- Added: visual feedback on Learn mode, led of active channel to be configured remains 
-		on until correct midi in configuration.
+	- Added: visual feedback on Learn mode, led of active channel to be configured remains on until "correct midi in" configuration.
 		
-	- Added: cancel Learn mode (undo changes) by pressing button.
+	- Added: cancel Learn Mode (undo changes) by pressing button.
 	
 	- Changed: in LEARN or MENU mode, leds remain on until end mode.
 	
-	- Changed: in LEARN mode, only data saved if all util channels (depending on mode) are configured
+	- Changed: in LEARN mode, only data saved if all util channels (depending on mode 1 to 4 gates/cv) are configured.
 	
-	- Added: in LEARN mode MIDI keyboard split can be done on alternate voices but only from higher note 
-		to lowest note Example:
-		- LearnStep 1: Voice 1: MIDI Channel 1 from C3 to avobe
-		- LearnStep 2: Voice 2: MIDI Channel 2 from C3 to avobe
-		- LearnStep 3: Voice 3: MIDI Channel 1 from E2 to C3
-		- LearnStep 4: Voice 4: MIDI Channel 1 from A1 to E2
+	- Added: in LEARN mode MIDI keyboard split can be done on alternate voices but only from higher note to lowest note 
+		Example:
+		- LearnStep 1: Voice 1: MIDI Channel* 1 from C3 to above
+		- LearnStep 2: Voice 2: MIDI Channel* 2 from C3 to above
+		- LearnStep 3: Voice 3: MIDI Channel* 1 from E2 to C3
+		- LearnStep 4: Voice 4: MIDI Channel* 1 from A1 to E2
  
 		In this example:
 		- Voice 1 can be any key
 		- Voice 2 can be in any key because channel not equal to Channel of voice 1.
 		- Voice 3 Can be any key lower than voice 1 because is in the same channel
 		- Voice 4 Can be any key lower than Voice 3 because is in the same Channel and Voice 3 is lower than Voice 1.
+
+		*--> Any Channel can be configured from 1 to 16
+
+	- Changed: in MENU mode, if another configuration is selected (From duo to poly for example) ends mode if correct midi input made.
 		
-	- Changed: in MENU mode, if another configuration is selected (From duo to poly for example) 
-		ends mode if correct midi input is made.
-		
-	- Changed: in MENU mode, Calibration is now possible on:
-		- 1 for voice 1
-		- 2 for voice 2
-		- 3 for voice 3
-		- 4 for voice 4
-		
-	- Changed: in MENU mode, configuration (MIDI Mode) is now possible on every octave higher than 0 
-		and can be done in every single note(depending on number of modes) on channels from 5 to 15
+	- Changed: in MENU mode, configuration (MIDI Mode) is now possible on every octave higher than 0 and can be done in every single note(depending on number of modes) on channels from 5 to 10
 	
 	- Added: duophonic modes (listed in next point), where:
 		- Voice 1
@@ -85,7 +80,7 @@ Firmware for the [Befaco](http://befaco.org) Eurorack MIDI module (MIDI Thing).
 		- NOTE 10(A#)-->POLYHIGH
 		- NOTE 11(B)-->POLYLOW
 
-	- Added: in MENU mode, change Legato and Gate Retrigger mode (only in monophonic modes), this modes are stored in memory: 
+	- Added: in MENU mode, added options change: Legato and Gate Retrigger mode (only in monophonic modes), this modes are stored in memory. Selection can be cancel by pressing button and ends with "correct note in": 
 		- MIDI Channel 16
 		
 		[Root Note(Musical note)-->Mode selected]
@@ -107,8 +102,8 @@ Firmware for the [Befaco](http://befaco.org) Eurorack MIDI module (MIDI Thing).
 		(-)gate time
 		(|)Gate trig		
  
-	- Added: Clock resolution (ppqn) change, this mode are stored in memory:
-		- MIDI Channel 15
+	- Added: in MENU mode, added options change: Clock resolution (ppqn) change, this mode is stored in memory. Selection can be cancel by pressing button and ends with "correct note in":
+		- MIDI Channel 16
 		
 		[Root Note(Musical note)-->Mode selected]
 

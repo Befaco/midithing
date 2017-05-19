@@ -27,6 +27,8 @@
 
 #include "firmware.h"
 #include "Blinker.h"
+// Var Learn Mode
+byte LearnMode = NORMALMODE;
 #include "MIDIClass.h"
 #include "MultiPointConv.h"
 
@@ -37,8 +39,7 @@
 mcp4728 Dac = mcp4728(0); // instantiate mcp4728 object, Device ID = 0
 MultiPointConv DACConv[4];
 
-// Var Learn Mode
-byte LearnMode = NORMALMODE;
+
 unsigned long LearnInitTime;
 byte LearnStep = 0;
 
@@ -103,7 +104,7 @@ void setup()
   }
 
   // Init triggers gates
-  Gates[0].pinLED = PITCHCV + 128;
+  Gates[0].pinLED = PITCHCV + 18;
   Gates[1].pinLED = VELOC + 128;
   Gates[2].pinLED = MODUL + 128;
   Gates[3].pinLED = BEND + 128;
@@ -158,55 +159,43 @@ void setup()
   analogReference(INTERNAL);
 #endif
   //LIGHTSHOW TIME!!
-  Blink.setBlink(50, 50, 3, PINLED);
-  delay(200);
-  Blink.setBlink(0, 0, 0);
-  Blink.setBlink(50, 50, 3, PINLED2);
-  delay(200);
-  Blink.setBlink(0, 0, 0);
-  Blink.setBlink(50, 50, 3, PINGATE);
-  delay(200);
-  Blink.setBlink(0, 0, 0);
-  Blink.setBlink(50, 50, 3, PINGATE2);
-  delay(200);
-  Blink.setBlink(0, 0, 0);
-  Blink.setBlink(50, 50, 3, PINGATE3);
-  delay(200);
-  Blink.setBlink(0, 0, 0);
-  Blink.setBlink(50, 50, 3, PINGATE4);
-  delay(200);
-  Blink.setBlink(0, 0, 0);
-  Blink.setBlink(50, 50, 3, PINCLOCK);
-  delay(200);
-  /*  Blink.setBlink(0, 0, 0);
-    Blink.setBlink(50, 50, 3, PINSTARTSTOP);
-    delay(200);*/
-
-  Blink.setBlink(0, 0, 0);
+  LightShow(100, 50, 2);
 
 }
+bool bounce = false;
+unsigned long init_ = 0;
 
 //////////////////////////////////////////////
 // Main Loop
+//////////////////////////////////////////////
 void loop()
 {
-  // put your main code here, to run repeatedly:
-  MIDI.read();
 
-  // handle blinks
-  Blink.playBlink();
-  for (int i = 0; i < 10; i++) {
-    Gates[i].playBlink();
+  if (bounce == true && LearnMode == NORMALMODE) {
+    unsigned long now_ = millis();
+    if (now_ > (init_ + 5500)) {
+      Blink.setBlink(0, 0, 0, PINLED);
+      Blink.setBlink(100, 0, -1, PINLED2);
+      init_ = 0;
+    } else if (now_ > (init_ + 1500)) {
+      Blink.setBlink(0, 0, 0, PINLED2);
+      Blink.setBlink(100, 0, -1, PINLED);
+    }
   }
+
   // Cal/Learn Button
   if (Bouncer.update()) { // button state changed
     unsigned long now = millis();
     unsigned long bouncerDuration = now - BouncerLastTime;
-
     BouncerLastTime = now;
+
+    bounce = true;
+    init_ = millis();
 
     // Check for learn/cal mode signal
     if (Bouncer.fell()) {
+      bounce = false;
+      init_ = 0;
       // If button pressed during calbration, end calibration
       if (LearnMode == ENTERCAL) {
         EndCalMode();
@@ -225,22 +214,32 @@ void loop()
       // Panic
       else if (bouncerDuration > 100) {
         AllNotesOff();
+        Blink.setBlink(50, 50, 2, PINLED);
       }
     }
   } else { // no change to the button state
+    // put your main code here, to run repeatedly:
+    MIDI.read();
+    // handle blinks
+    Blink.playBlink();
+    for (int i = 0; i < 10; i++) {
+      Gates[i].playBlink();
+    }
     // In Learn mode, enter learn cycle
-    if (LearnMode == ENTERLEARN) {
-      DoLearnCycle();
-    } else if (LearnMode == ENTERCAL) {
-      DoCalCycle();
+    switch (LearnMode) {
+      case ENTERLEARN:
+        DoLearnCycle();
+        break;
+      case ENTERCAL:
+        DoCalCycle();
+        break;
+      case NORMALMODE:
+        if (VoiceOverlap == false ) {
+          RetrigProcess();
+        }
+        break;
     }
   }
-
-  if (LearnMode == NORMALMODE) {
-    // Retrigger Functionality
-    RetrigProcess();
-  }
-
 }
 
 //////////////////////////////////////////////
@@ -257,69 +256,107 @@ void  SendvaltoDAC(unsigned int port, unsigned int val)
 #endif
 }
 
+//////////////////////////////////////////////
+// Retrig || Legato
+/////////////////////////////////////////////
+static void RetrigProcess() {
+
+  unsigned long now = millis();
+  unsigned long noteOffDuration = 0;
+  for (int i = 1; i < 5; i++) {
+    //Retrig only performed when an existent gate is running (values set in MIDIClass.ino --> MIDICV::playNote )
+    if (Retrig[i].DoRetrig == true && Retrig[i].NoteOffTrig == false) {
+
+      //Note off first time
+      if (Retrig[i].RetrigStarted == false) {
+
+        Retrig[i].RetrigStarted = true;
+        Retrig[i].CycleLastTime = now;
+        digitalWrite(i, LOW);
+
+      } else {
+        noteOffDuration = now - Retrig[i].CycleLastTime;
+        //Value of comparision (20) is the delay betwheen retrig action
+        if (noteOffDuration >= 20) {
+          Retrig[i].DoRetrig = false;
+          Retrig[i].RetrigStarted = false;
+          Retrig[i].CycleLastTime = 0;
+          digitalWrite(i, HIGH);
+        } else {
+          digitalWrite(i, LOW);
+        }
+      }
+    }
+
+    if (Retrig[i].NoteOffTrig == true) {
+      digitalWrite(i, LOW);
+      Retrig[i].NoteOffTrig = false;
+      Retrig[i].DoRetrig = false;
+      Retrig[i].RetrigStarted = false;
+    }
+  }
+}
+
+//////////////////////////////////////////////
+// Information Blinks
+/////////////////////////////////////////////
 
 void BlinkOK(void) {
   //BLINK OK
   Blink.setBlink(0, 0, 0);
   Blink.setBlink(100, 1, 1, PINLED);
-  delay(200);
+  delay(50);
   Blink.setBlink(0, 0, 0, PINLED);
-  Blink.setBlink(100, 1, 1, PINLED2);
-  delay(200);
-  Blink.setBlink(0, 0, 0, PINLED2);
 }
 
 void BlinkKO(void) {
   // BLINK ERROR
-  //Blink.setBlink(0, 0, 0);
   Blink.setBlink(0, 0, 0, PINLED);
-  //Blink.setBlink(100, 1, 1, PINSTARTSTOP);
-  //delay(200);
   Blink.setBlink(0, 0, 0);
   Blink.setBlink(100, 1, 1, PINCLOCK);
-  delay(200);
-  Blink.setBlink(0, 0, 0);
+  delay(50);
+  Blink.setBlink(0, 0, 0, PINCLOCK);
+  delay(50);
+  Blink.setBlink(100, 1, 1, PINCLOCK);
+  delay(50);
+  Blink.setBlink(0, 0, 0), PINCLOCK;
 }
 
-static void RetrigProcess() {
+void ResetBlink() {
+  Blink.setBlink(0, 0, 0, PINLED);
+  Blink.setBlink(0, 0, 0, PINLED2);
+  Blink.setBlink(0, 0, 0, PINGATE);
+  Blink.setBlink(0, 0, 0, PINGATE2);
+  Blink.setBlink(0, 0, 0, PINGATE3);
+  Blink.setBlink(0, 0, 0, PINGATE4);
+  Blink.setBlink(0, 0, 0, PINCLOCK);
+  Blink.setBlink(0, 0, 0, PINSTARTSTOP);
+}
 
-  unsigned long now = millis();
-  unsigned long noteOffDuration = 0;
+static void LightShow(unsigned long periodon, unsigned long periodoff, int times) {
 
+  PlayLightShowPin(periodon, periodoff, times, PINLED);
+  PlayLightShowPin(periodon, periodoff, times, PINLED2);
+  PlayLightShowPin(periodon, periodoff, times, PINGATE);
+  PlayLightShowPin(periodon, periodoff, times, PINGATE2);
+  PlayLightShowPin(periodon, periodoff, times, PINGATE3);
+  PlayLightShowPin(periodon, periodoff, times, PINGATE4);
+  PlayLightShowPin(periodon, periodoff, times, PINCLOCK);
+  PlayLightShowPin(periodon, periodoff, times, PINSTARTSTOP);
 
-  if (VoiceOverlap == false ) {
-    for (int i = 1; i < 5; i++) {
-      //Retrig only performed when an existent gate is running (values set in MIDIClass.ino --> MIDICV::playNote )
-      if (Retrig[i].DoRetrig == true && Retrig[i].NoteOffTrig == false) {
+}
+static void PlayLightShowPin(unsigned long periodon, unsigned long periodoff, int times, int newpin = -1) {
+  Blink.setBlink(100, 0, -1, newpin);
+  delay(75);
+  ResetBlink( );
+  Blink.setBlink(100, 0, -1, newpin);
+  delay(75);
+  ResetBlink( );
+}
 
-        //Note off first time
-        if (Retrig[i].RetrigStarted == false) {
-
-          Retrig[i].RetrigStarted = true;
-          Retrig[i].CycleLastTime = now;
-          digitalWrite(i, LOW);
-
-        } else {
-          noteOffDuration = now - Retrig[i].CycleLastTime;
-          //Value of comparision (20) is the delay betwheen retrig action
-          if (noteOffDuration >= 20) {
-            Retrig[i].DoRetrig = false;
-            Retrig[i].RetrigStarted = false;
-            Retrig[i].CycleLastTime = 0;
-            digitalWrite(i, HIGH);
-          } else {
-            digitalWrite(i, LOW);
-          }
-        }
-      }
-
-      if (Retrig[i].NoteOffTrig == true) {
-        digitalWrite(i, LOW);
-        Retrig[i].NoteOffTrig = false;
-        Retrig[i].DoRetrig = false;
-        Retrig[i].RetrigStarted = false;
-      }
-    }
-  }
+void BlinkSaving(void) {
+  ResetBlink();
+  Blink.setBlink(100, 0, -1, PINLED);
+  Blink.setBlink(100, 0, -1, PINLED2);
 }
 
