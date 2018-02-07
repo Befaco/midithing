@@ -31,9 +31,11 @@
 // Do whatever you want when you receive a Note On.
 
 VoiceSelector Selector;
+
 static int countCLOCK = 1;
-//static int ppqnCLOCK = 24;
-int ppqnCLOCK = 24;
+
+unsigned long trigCLOCK = ( ppqnCLOCK * clockFactor );
+
 static byte MIDIRun = 0; // Set to 0 to init in stop condition
 
 void HandleNoteOn(byte channel, byte pitch, byte velocity)
@@ -45,12 +47,12 @@ void HandleNoteOn(byte channel, byte pitch, byte velocity)
     return;
   }
   // If in cal mode, adjust notes
-  if (   LearnMode == ENTERCAL 
-      && velocity > 0          
-      && checkMenuMode(pitch) == CALIBRATION 
-      && MenuModeHandle(channel, pitch, velocity)) {
-      //Calibration
-        return;  // do not play note if calibration key pressed
+  if (   LearnMode == ENTERCAL
+         && velocity > 0
+         && checkMenuMode(pitch) != 0
+         && MenuModeHandle(channel, pitch, velocity)) {
+    //Calibration
+    return;  // do not play note if calibration key pressed
   }
 
   // Check if received channel is any active MIDI
@@ -61,7 +63,7 @@ void HandleNoteOn(byte channel, byte pitch, byte velocity)
 #endif
     return; // received channel not any active MIDI
   }
-  if (VoiceMode == PERCTRIG && channel == 10 && velocity > 0) {
+  if (VoiceMode == PERCTRIG && channel == PERCCHANNEL && velocity > 0) {
     // Play percussion
     Gates[MIDIactive].setBlink(TRIGPERCUSSION, 1, 1); // Play trigger
     Blink.setBlink(100, 1, 1, PINLED);  // Blink once every Note ON (not in CAL/LEARN mode)
@@ -193,7 +195,7 @@ void HandleClock(void)
   } else {
     countCLOCK = 1;
     // Send trigger to CLOCK port
-    Gates[4].setBlink(TRIGCLOCK, 1, 1);
+    Gates[4].setBlink(trigCLOCK, 1, 1);
   }
 }
 

@@ -37,14 +37,14 @@ void EnterLearnMode(void)
   // Set Learn mode flag
   LearnMode = ENTERLEARN;
   LearnStep = 0;
-  
+
   // All Notes off
   AllNotesOff();
-  
+
   // Init blinker
   Blink.setBlink(100, 0, -1, PINLED);
   Blink.setBlink(100, 0, -1, PINGATE);
-  
+
   // Init timer
   LearnInitTime = millis();
 #ifdef PRINTDEBUG
@@ -59,7 +59,6 @@ void DoLearnCycle(void)
 #ifdef PRINTDEBUG
   Serial.println("End Learn Mode");
 #endif
-  //}
 }
 
 //////////////////////////////
@@ -72,7 +71,7 @@ void EnterCalMode(void)
 
   // All Notes off
   AllNotesOff();
-  
+
   // Init blinker
   Blink.setBlink(100, 0, -1, PINLED2);
 
@@ -109,11 +108,12 @@ void EndCalMode(void)
   BlinkSaving();
   // Set normal mode
   LearnMode = NORMALMODE;
+  //Reset Process calibration flag if setted
+  exitCalProc();
   // Store in EEPROM
   WriteMIDIeeprom();
   // Turn off LED blink
   ResetBlink();
-
 #ifdef PRINTDEBUG
   Serial.println("End Cal Mode");
 #endif
@@ -126,7 +126,7 @@ byte MenuModeHandle(byte channel, byte pitch, byte velocity)
 {
   byte lv_return = 1;
   switch (checkMenuMode(channel)) {
-    case CALIBRATION:
+    case CALMODE:
       // Channels 1-4 for DAC calibration 0-3
       lv_return = (DACConv[channel - 1].Processnote(channel, pitch, velocity));
       break;
@@ -146,22 +146,21 @@ byte MenuModeHandle(byte channel, byte pitch, byte velocity)
   ResetBlink();
   switch (lv_return) {
     case 1:
-      if ( checkMenuMode(channel) != CALIBRATION) {
+      if ( checkMenuMode(channel) != CALMODE) {
         EndCalMode();
       } else {
         BlinkOK();
       }
       break;
     case 0:
-      if ( checkMenuMode(channel) != CALIBRATION) {
-        BlinkKO();;
+      if ( checkMenuMode(channel) != CALMODE) {
+        BlinkKO();
       }
       break;
     default:
       //do nothing
       break;
   }
-
   return (lv_return);
 }
 
@@ -186,6 +185,19 @@ void ConfirmLearnMode(void)
   for (int i = 0; i < 4; i++) {
     Voice[i].ResetOldLearn();
   }
+
+  if ( IsPoly2Mode() ){
+    //IF DUOMODE, only Voice 0 is configured And has to be replicated to Voice[2] (CV3)
+    Voice[1].SetLearn( Voice[0].midiChannel, Voice[0].pitchDAC->minInput );
+  }
+  
+  if ( IsPoly4Mode() ){
+    //IF POLY, only Voice 0 is configured and has to be replicated voice to all (CV2,3 &4)
+    Voice[1].SetLearn( Voice[0].midiChannel, Voice[0].pitchDAC->minInput );
+    Voice[2].SetLearn( Voice[0].midiChannel, Voice[0].pitchDAC->minInput );
+    Voice[3].SetLearn( Voice[0].midiChannel, Voice[0].pitchDAC->minInput );
+  }
+  
   EndLearnMode();
 }
 
@@ -222,6 +234,7 @@ byte selectOptions(byte pitch)
       break;
     case 1: // C#
       ppqnCLOCK = 24;
+      trigCLOCK = ( ppqnCLOCK * clockFactor );
       return 1;
       break;
     case 2: //D
@@ -230,18 +243,27 @@ byte selectOptions(byte pitch)
       break;
     case 3: //D#
       ppqnCLOCK = 48;
+      trigCLOCK = ( ppqnCLOCK * clockFactor );
       return 1;
       break;
     case 6: // F#
       ppqnCLOCK = 12;
+      trigCLOCK = ( ppqnCLOCK * clockFactor );
       return 1;
       break;
     case 8: // G#
       ppqnCLOCK = 6;
+      trigCLOCK = ( ppqnCLOCK * clockFactor );
       return 1;
       break;
     case 10: // A#
       ppqnCLOCK = 3;
+      trigCLOCK = ( ppqnCLOCK * clockFactor );
+      return 1;
+      break;
+    case 11: //B
+      //Set Process calibration flag if setted
+      enterCalProc( );
       return 1;
       break;
     default:
@@ -311,15 +333,49 @@ byte selectVoiceMode(byte pitch)
   }
 }
 
-byte checkMenuMode( byte channel ) {
-
-  if (channel == 1 || channel == 2 || channel == 3 || channel == 4) {
-    return CALIBRATION;
-  } else if (channel >= 5 && channel <= 10) {
+byte checkMenuMode( byte channel )
+{
+  if (calProcEnabled) {
+    return CALMODE;
+  } else if (channel == 1) {
     return CHANGEMODE;
-  } else if (channel == 16) {
+  } else if (channel == 2) {
     return CHANGEOPTIONS;
   }
+}
 
+void enterCalProc(void)
+{
+  for (int i = 0; i < 10; i++) {
+    Blink.setBlink(100, 1, 1, PINCLOCK);
+    delay(100);
+    Blink.setBlink(0, 0, 0, PINCLOCK);
+    delay(100);
+    Blink.setBlink(100, 1, 1, PINSTARTSTOP);
+    delay(100);
+    Blink.setBlink(0, 0, 0, PINSTARTSTOP);
+    delay(100);
+  }
+
+  calProcEnabled = true;
+  InitLearnMode();
+  for (int i = 0; i < 4; i++) {
+    Voice[i].SetLearn((i + 1), 0);
+  }
+  WriteMIDIeeprom();
+}
+
+
+void exitCalProc(void)
+{
+  if (calProcEnabled == true ) {
+    calProcEnabled = false;
+    for (int i = 0; i < 4; i++) {
+      Voice[i].ResetLearn();
+      Voice[i].ResetOldLearn();
+    }
+    Blink.setBlink(0, 0, 0, PINCLOCK);
+    Blink.setBlink(0, 0, 0, PINSTARTSTOP);
+  }
 }
 

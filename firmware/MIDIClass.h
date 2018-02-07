@@ -54,6 +54,7 @@ extern int NumVoices; // Number of MIDI channels in use
 extern int VoiceMode; // MIDI mode Set to quad mode by default
 extern bool VoiceOverlap; // Overlap option for mono modes
 extern int ppqnCLOCK;
+extern unsigned long trigCLOCK;
 extern long VoiceOVLTime;
 extern byte LastVel;
 extern byte LastNote;
@@ -67,8 +68,24 @@ static bool IsPolyMode() {
              || VoiceMode == DUOFIRST
              || VoiceMode == DUOLAST
              || VoiceMode == DUOHIGH
-             || VoiceMode == DUOLOW);
+             || VoiceMode == DUOLOW );
 }
+
+static bool IsPoly4Mode() {
+  return (   VoiceMode == POLYFIRST
+             || VoiceMode == POLYLAST
+             || VoiceMode == POLYHIGH
+             || VoiceMode == POLYLOW );
+}
+
+static bool IsPoly2Mode() {
+  return (   VoiceMode == DUOFIRST
+             || VoiceMode == DUOLAST
+             || VoiceMode == DUOHIGH
+             || VoiceMode == DUOLOW );
+}
+
+
 
 static bool IsPercMode() {
   return (VoiceMode == PERCTRIG || VoiceMode == PERCGATE);
@@ -215,7 +232,7 @@ class VoiceSelector {
 
     void noteOff(int channel, byte pitch)
     {
-     
+
       Voice[channel].processNoteOff(pitch);
       removeFromPlaying(pitch);
       if (IsPolyMode() && popNextNoteFromPool(&pitch)) {
@@ -456,6 +473,12 @@ class VoiceSelector {
 
     int getPolyTargetChannel(byte channel, byte pitch, byte velocity)
     {
+
+      if (Voice[0].midiChannel != channel) {
+        //IN poly mode, Only one channel is Configured for all voices, first voice have the right channel, Do not try to play note in different channel
+        return -1;
+      }
+      
       // first check all channels for the note
       for (int i = 0; i < NumVoices; i++) {
         if (Voice[i].midiChannel == channel && Voice[i].isPlayingNote(pitch)) {

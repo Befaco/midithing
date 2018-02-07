@@ -272,7 +272,7 @@ void MIDICV::LearnThis(byte channel, byte pitch, byte velocity)
         delay(200);
         Blink.setBlink(0, 0, 0);
       }
-
+      
       if (VoiceMode == MONOMIDI || IsPolyMode()) {
         endLearn = true;
       } else {
@@ -479,7 +479,7 @@ int ReadMIDIeeprom(void)
   VoiceMode = voiceMode;
   VoiceOverlap = voiceOverlap;
   ppqnCLOCK = lppqnCLOCK;
-
+  trigCLOCK = ( ppqnCLOCK * clockFactor );
   return (NumVoices);
 }
 

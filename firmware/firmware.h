@@ -36,9 +36,15 @@
 #define ENTERCAL 2
 
 //MODEmenu
-#define CALIBRATION 0
-#define CHANGEMODE 1
-#define CHANGEOPTIONS 2
+#define CALMODE 1
+#define CHANGEMODE 2
+#define CHANGEOPTIONS 3
+
+//Percussion midi channel
+#define PERCCHANNEL 10
+#define clockFactor 2
+int ppqnCLOCK = 6;
+bool calProcEnabled = false;
 
 // MIDI Modes
 enum VoiceModes {

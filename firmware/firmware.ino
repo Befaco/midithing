@@ -39,7 +39,6 @@ byte LearnMode = NORMALMODE;
 mcp4728 Dac = mcp4728(0); // instantiate mcp4728 object, Device ID = 0
 MultiPointConv DACConv[4];
 
-
 unsigned long LearnInitTime;
 byte LearnStep = 0;
 
@@ -142,10 +141,13 @@ void setup()
     // Set Mode manually
     //SetVoiceMode(MONOMIDI);
     //SetVoiceMode(DUALMIDI);
-    SetVoiceMode(QUADMIDI);
+    //SetVoiceMode(QUADMIDI);
+    //SetVoiceMode(DUOFIRST);
+    SetVoiceMode(POLYFIRST);
     SetOverlap(false);
     ppqnCLOCK = 6;
-    //SetVoiceMode(POLYFIRST);
+    trigCLOCK = ( ppqnCLOCK * clockFactor );
+    
     //SetVoiceMode(PERCTRIG);
     //SetVoiceMode(DUOLOW);
   }
@@ -156,7 +158,7 @@ void setup()
   Dac.analogWrite(0, 0, 0, 0);
 
 #ifdef CALIBRATION
-  analogReference(INTERNAL);
+ // analogReference(INTERNAL);
 #endif
   //LIGHTSHOW TIME!!
   LightShow(100, 50, 2);
@@ -220,6 +222,7 @@ void loop()
   } else { // no change to the button state
     // put your main code here, to run repeatedly:
     MIDI.read();
+
     // handle blinks
     Blink.playBlink();
     for (int i = 0; i < 10; i++) {
@@ -227,16 +230,16 @@ void loop()
     }
     // In Learn mode, enter learn cycle
     switch (LearnMode) {
+      case NORMALMODE:
+        if (VoiceOverlap == false ) {
+          RetrigProcess();
+        }
+        break;
       case ENTERLEARN:
         DoLearnCycle();
         break;
       case ENTERCAL:
         DoCalCycle();
-        break;
-      case NORMALMODE:
-        if (VoiceOverlap == false ) {
-          RetrigProcess();
-        }
         break;
     }
   }
@@ -262,8 +265,9 @@ void  SendvaltoDAC(unsigned int port, unsigned int val)
 static void RetrigProcess() {
 
   unsigned long now = millis();
-  unsigned long noteOffDuration = 0;
-  for (int i = 1; i < 5; i++) {
+  //unsigned long noteOffDuration = 0;
+  //for (int i = 1; i < 5; i++) {
+  for (int i = 1; i <= NumVoices; i++) {
     //Retrig only performed when an existent gate is running (values set in MIDIClass.ino --> MIDICV::playNote )
     if (Retrig[i].DoRetrig == true && Retrig[i].NoteOffTrig == false) {
 
@@ -275,9 +279,9 @@ static void RetrigProcess() {
         digitalWrite(i, LOW);
 
       } else {
-        noteOffDuration = now - Retrig[i].CycleLastTime;
+        //noteOffDuration = now - Retrig[i].CycleLastTime;
         //Value of comparision (20) is the delay betwheen retrig action
-        if (noteOffDuration >= 20) {
+        if ( (now - Retrig[i].CycleLastTime) >= 3) {
           Retrig[i].DoRetrig = false;
           Retrig[i].RetrigStarted = false;
           Retrig[i].CycleLastTime = 0;
@@ -319,7 +323,7 @@ void BlinkKO(void) {
   delay(50);
   Blink.setBlink(100, 1, 1, PINCLOCK);
   delay(50);
-  Blink.setBlink(0, 0, 0), PINCLOCK;
+  Blink.setBlink(0, 0, 0, PINCLOCK);
 }
 
 void ResetBlink() {
@@ -345,7 +349,7 @@ static void LightShow(unsigned long periodon, unsigned long periodoff, int times
   PlayLightShowPin(periodon, periodoff, times, PINSTARTSTOP);
 
 }
-static void PlayLightShowPin(unsigned long periodon, unsigned long periodoff, int times, int newpin = -1) {
+static void PlayLightShowPin(unsigned long periodon, unsigned long periodoff, int times, int newpin) {
   Blink.setBlink(100, 0, -1, newpin);
   delay(75);
   ResetBlink( );
