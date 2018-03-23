@@ -23,7 +23,12 @@
 // See http://creativecommons.org/licenses/MIT/ for more information.
 //
 // -----------------------------------------------------------------------------
-//
+// V2 - for beta testing
+//Bugs Solved:
+//- Added Learn continuity system
+//- Fixed Poly priority and voice steal
+//- Fixed processed notes under min note in poly mode
+//- optimized write to eprom mode 
 
 #include "firmware.h"
 #include "Blinker.h"
@@ -138,18 +143,14 @@ void setup()
 #ifdef PRINTDEBUG
     Serial.println("No EEPROM Read");
 #endif
-    // Set Mode manually
-    //SetVoiceMode(MONOMIDI);
-    //SetVoiceMode(DUALMIDI);
-    //SetVoiceMode(QUADMIDI);
-    //SetVoiceMode(DUOFIRST);
-    SetVoiceMode(POLYFIRST);
+    // Set Mode manually, default values
+    SetVoiceMode(QUADMIDI);
+    BckUpAllLearn();
     SetOverlap(false);
-    ppqnCLOCK = 6;
-    trigCLOCK = ( ppqnCLOCK * clockFactor );
-    
-    //SetVoiceMode(PERCTRIG);
-    //SetVoiceMode(DUOLOW);
+    SetClockMode(NORMAL_CLOCK);
+    SetSTSPMode(NORMAL_STSP);
+    SetPpqnClock(24);
+    WriteMIDIeeprom();
   }
 
   // LDAC pin must be grounded for normal operation.
@@ -158,7 +159,7 @@ void setup()
   Dac.analogWrite(0, 0, 0, 0);
 
 #ifdef CALIBRATION
- // analogReference(INTERNAL);
+  analogReference(INTERNAL);
 #endif
   //LIGHTSHOW TIME!!
   LightShow(100, 50, 2);
@@ -177,6 +178,7 @@ void loop()
     unsigned long now_ = millis();
     if (now_ > (init_ + 5500)) {
       Blink.setBlink(0, 0, 0, PINLED);
+      
       Blink.setBlink(100, 0, -1, PINLED2);
       init_ = 0;
     } else if (now_ > (init_ + 1500)) {
@@ -198,25 +200,31 @@ void loop()
     if (Bouncer.fell()) {
       bounce = false;
       init_ = 0;
-      // If button pressed during calbration, end calibration
-      if (LearnMode == ENTERCAL) {
-        EndCalMode();
-      }
-      else if (LearnMode == ENTERLEARN) {
-        CancelLearnMode();
-      }
+
       // Enter Calmode after 5 secs button press
-      else if (bouncerDuration > 5000) {
+      if (bouncerDuration > 5000) {
         EnterCalMode();
       }
       // More than one second: Learn Mode
-      else if (bouncerDuration > 1000 && VoiceMode != PERCTRIG && VoiceMode != PERCGATE ) {
+      else if (bouncerDuration > 1000 && GS.VoiceMode != PERCTRIG && GS.VoiceMode != PERCGATE ) {
         EnterLearnMode();
       }
       // Panic
       else if (bouncerDuration > 100) {
         AllNotesOff();
         Blink.setBlink(50, 50, 2, PINLED);
+        
+        // If button pressed during calbration, end calibration
+        if (LearnMode == ENTERCAL) {
+          if (calProcEnabled){ //end of calibration when is calibrating
+            EndCalMode(false); //cancel = false
+          }else{ //cancel process in menu mode
+            EndCalMode(true); //cancel = true
+          }
+        }else if (LearnMode == ENTERLEARN) {
+          CancelLearnMode();
+        }
+
       }
     }
   } else { // no change to the button state
@@ -231,7 +239,7 @@ void loop()
     // In Learn mode, enter learn cycle
     switch (LearnMode) {
       case NORMALMODE:
-        if (VoiceOverlap == false ) {
+        if (!GS.VoiceOverlap && !IsPolyMode(GS.VoiceMode)) {
           RetrigProcess();
         }
         break;
@@ -267,7 +275,7 @@ static void RetrigProcess() {
   unsigned long now = millis();
   //unsigned long noteOffDuration = 0;
   //for (int i = 1; i < 5; i++) {
-  for (int i = 1; i <= NumVoices; i++) {
+ for (int i = 1; i <= GS.NumVoices; i++) {
     //Retrig only performed when an existent gate is running (values set in MIDIClass.ino --> MIDICV::playNote )
     if (Retrig[i].DoRetrig == true && Retrig[i].NoteOffTrig == false) {
 
@@ -326,7 +334,7 @@ void BlinkKO(void) {
   Blink.setBlink(0, 0, 0, PINCLOCK);
 }
 
-void ResetBlink() {
+void ResetBlink(void) {
   Blink.setBlink(0, 0, 0, PINLED);
   Blink.setBlink(0, 0, 0, PINLED2);
   Blink.setBlink(0, 0, 0, PINGATE);
@@ -359,7 +367,7 @@ static void PlayLightShowPin(unsigned long periodon, unsigned long periodoff, in
 }
 
 void BlinkSaving(void) {
-  ResetBlink();
+  ResetBlink( );
   Blink.setBlink(100, 0, -1, PINLED);
   Blink.setBlink(100, 0, -1, PINLED2);
 }

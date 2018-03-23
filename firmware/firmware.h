@@ -43,8 +43,17 @@
 //Percussion midi channel
 #define PERCCHANNEL 10
 #define clockFactor 2
-int ppqnCLOCK = 6;
 bool calProcEnabled = false;
+
+enum ClockModes{
+  NORMAL_CLOCK = 0,
+  RUNNING_CLOCK = 1,
+};
+
+enum StSpModes{
+  NORMAL_STSP = 0,
+  UPDOWN_STSP = 1,
+};
 
 // MIDI Modes
 enum VoiceModes {
@@ -64,6 +73,17 @@ enum VoiceModes {
   DUOLOW,
   MIDIMODE_LAST,
 };
+
+struct GENERALSETTINGS {
+  int NumVoices        = 0; // Number of MIDI channels in use
+  int VoiceMode        = QUADMIDI; // MIDI mode Set to quad mode by default
+  int CurrentVoiceMode = QUADMIDI;
+  bool VoiceOverlap    = false; // Overlap option for mono modes
+  int ClockMode        = NORMAL_CLOCK;
+  int PpqnCLOCK        = 24;
+  int StSpMode         = NORMAL_STSP;
+};
+
 
 //
 #define TRIGPERCUSSION 60 // Width of trigger for percussions

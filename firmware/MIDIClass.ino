@@ -26,9 +26,7 @@
 //
 
 MIDICV Voice[4];
-int NumVoices = 0; // Number of MIDI channels in use
-int VoiceMode = QUADMIDI; // MIDI mode Set to quad mode by default
-bool VoiceOverlap = false;
+GENERALSETTINGS GS;
 byte LastVel = 0;
 byte LastNote = 0;
 
@@ -41,7 +39,9 @@ void MIDICV::processNoteOn(byte pitch, byte velocity)
   Serial.println(velocity);
   printNotes();
 #endif
-
+/*if (pitch < pitchDAC->minInput){
+  return; 
+}*/
   if (notes.getCount() >= MAXNOTES) return; // as fast as possible
 
   // Add a new note to the note on list
@@ -189,7 +189,9 @@ void MIDICV::playNote(byte note, byte plvelocity)
     }
     SendvaltoDAC(pitchDAC->DACnum, voltage);
   }
-
+/*if (voltage == 0) {
+  return; 
+}*/
   if (velDAC != NULL) {
     voltage2 = velDAC->linealConvert(plvelocity);
     if (voltage2 > 4095) {
@@ -201,12 +203,12 @@ void MIDICV::playNote(byte note, byte plvelocity)
   if (LearnMode == NORMALMODE) {
     //Retrig handle only in normalmode
     if (plvelocity == 0) { //NOTE OFF
-      if ( !VoiceOverlap ) {
+      if ( !GS.VoiceOverlap ) {
         Retrig[gatePin].NoteOffTrig = true;
       }
       playNoteOff();
     } else if (gatePin != -1) {
-      if ( !VoiceOverlap && !IsPolyMode() && plvelocity > 0 && LastVel > 0 && note != LastNote && !Retrig[gatePin].DoRetrig) {
+      if ( !GS.VoiceOverlap && !IsPolyMode(GS.VoiceMode) && plvelocity > 0 && LastVel > 0 && note != LastNote && !Retrig[gatePin].DoRetrig) {
         Retrig[gatePin].DoRetrig = true;
       } else {
         digitalWrite(gatePin, HIGH);
@@ -237,6 +239,9 @@ void MIDICV::playNoteOff(void)
   }
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////////
+//Learn Cycles
+/////////////////////////////////////////////////////////////////////////////////////////////
 // Note on received in Learn Mode
 // Capture channel and new minimum note
 void MIDICV::LearnThis(byte channel, byte pitch, byte velocity)
@@ -256,14 +261,12 @@ void MIDICV::LearnThis(byte channel, byte pitch, byte velocity)
   LearnInitTime = millis();
   notes.clear();
   LearnStep++;
-
   if (ChannelExists(channel, pitch, LearnStep)) {
     BlinkKO();
     LearnStep--;
     channelExists = true;
   }
-  
-    Blink.setBlink(0, 0, 0);
+  Blink.setBlink(0, 0, 0);
   switch (LearnStep) {
     case 1:
       if (!channelExists) {
@@ -272,8 +275,8 @@ void MIDICV::LearnThis(byte channel, byte pitch, byte velocity)
         delay(200);
         Blink.setBlink(0, 0, 0);
       }
-      
-      if (VoiceMode == MONOMIDI || IsPolyMode()) {
+
+      if (GS.VoiceMode == MONOMIDI || IsPolyMode(GS.VoiceMode)) {
         endLearn = true;
       } else {
         Blink.setBlink(100, 0, -1, PINGATE2);
@@ -287,7 +290,7 @@ void MIDICV::LearnThis(byte channel, byte pitch, byte velocity)
         delay(200);
         Blink.setBlink(0, 0, 0);
       }
-      if (VoiceMode == DUALMIDI) {
+      if (GS.VoiceMode == DUALMIDI) {
         endLearn = true;
       } else {
         Blink.setBlink(100, 0, -1, PINGATE3);
@@ -310,12 +313,12 @@ void MIDICV::LearnThis(byte channel, byte pitch, byte velocity)
       delay(200);
       Blink.setBlink(0, 0, 0);
       Blink.setBlink(0, 0, 0, PINLED);
-      if (VoiceMode == QUADMIDI) {
+      if (GS.VoiceMode == QUADMIDI) {
         endLearn = true;
       }
       break;
   }
-    if (channelExists) {
+  if (channelExists) {
     return;
   }
 
@@ -340,34 +343,39 @@ bool MIDICV::ChannelExists(byte channel, byte mininput, byte learnstep) {
   return false;
 }
 
-void MIDICV::SetOldLearn(byte channel, byte mininput) {
+void MIDICV::SetBckLearn(byte channel, byte mininput) {
+  midiChannel_bck = channel;
+  minInput_bck    = mininput;
+}
 
-  midiChannel_old = channel;
-  minInput_old    = mininput;
-
+void MIDICV::SetCurrentLearn(byte channel, byte mininput) {
+  midiChannel_current = channel;
+  minInput_current    = mininput;
 }
 
 void MIDICV::SetLearn(byte channel, byte mininput) {
-
   midiChannel           = channel;
   pitchDAC->minInput    = mininput;
-
 }
 
-void MIDICV::ResetOldLearn() {
-
-  SetOldLearn(0, 0);
-
+void MIDICV::ReSetCurrentLearn() {
+  SetCurrentLearn(0, 0);
 }
 
-void MIDICV::ResetLearn() {
-  SetLearn(midiChannel_old, minInput_old);
+void MIDICV::BckUpLearn() {
+  SetBckLearn(midiChannel, pitchDAC->minInput);
+}
 
+void MIDICV::RecoveryLearn() {
+  SetLearn(midiChannel_bck, minInput_bck);
+}
+
+void MIDICV::ResetLearn() {        
+  SetLearn(midiChannel_current, minInput_current);
 }
 
 void MIDICV::InitLearn() {
-  SetOldLearn(midiChannel, pitchDAC->minInput);
-
+  SetCurrentLearn(midiChannel, pitchDAC->minInput);
 }
 
 ///////////////////////////////////
@@ -400,7 +408,7 @@ int PercussionNoteGate(byte pitch)
 // Check if received channel is any active MIDI
 void AllNotesOff(void)
 {
-  for (int i = 0; i < NumVoices; i++) {
+  for (int i = 0; i < GS.NumVoices; i++) {
     Voice[i].playNoteOff();
     Voice[i].notes.clear();
   }
@@ -412,40 +420,28 @@ int ReadMIDIeeprom(void)
   //return -1;
   MIDICV tempMIDI;
   MultiPointConv tempConv;
-  int numVoices, voiceMode, lppqnCLOCK;
-  bool voiceOverlap;
-  int i;
-  int offset = 0;
-
-  eeprom_read_block((void *)&numVoices, (void *)offset, sizeof(numVoices));
-  offset = sizeof(int);
-
-  eeprom_read_block((void *)&voiceMode, (void *)offset, sizeof(voiceMode));
-  offset = offset + sizeof(int);
-
-  eeprom_read_block((void *)&voiceOverlap, (void *)offset, sizeof(voiceOverlap));
-  offset = offset + sizeof(bool);
-
-  eeprom_read_block((void *)&lppqnCLOCK, (void *)offset, sizeof(lppqnCLOCK));
-  offset = offset + sizeof(int);
-
+  GENERALSETTINGS lGS;
+  int i, offset = 0;
+  
+  eeprom_read_block((void *)&lGS, (void *)offset, sizeof(lGS));
+  offset = offset + sizeof(lGS);
+  
 #ifdef PRINTDEBUG
   Serial.print("Read EEPROM Num Voices");
   Serial.print(numVoices);
   Serial.print(" / Voice Mode: ");
   Serial.println(voiceMode);
 #endif
-  if (numVoices < 1 || numVoices > 4) {
+  if (lGS.NumVoices < 1 || lGS.NumVoices > 4) {
     return (-1);
   }
-  if (voiceMode <= MIDIMODE_INVALID || voiceMode >= MIDIMODE_LAST) {
+  if (lGS.VoiceMode <= MIDIMODE_INVALID || lGS.VoiceMode >= MIDIMODE_LAST) {
     return (-1);
   }
 
   for (i = 0; i < 4; i++) {
-    eeprom_read_block((void *)&tempConv,
-                      (void *)(offset + i * (sizeof(tempConv) + sizeof(tempMIDI))),
-                      sizeof(tempConv));
+    eeprom_read_block((void *)&tempConv, (void *)offset, sizeof(tempConv));
+    offset = offset + sizeof(tempConv);
     // stored in Pitch Only if EEPROM values for rangeDAC are correct
     if (i == 0) {
       if (tempConv.rangeDAC == 4093) {
@@ -456,14 +452,11 @@ int ReadMIDIeeprom(void)
     } else {
       memcpy(&DACConv[i], &tempConv, sizeof(DACConv[i]));
     }
-
-    eeprom_read_block((void *)&tempMIDI,
-                      (void *)(offset + sizeof(tempConv) + i *
-                               (sizeof(tempConv) + sizeof(tempMIDI))),
-                      sizeof(tempMIDI));
+    eeprom_read_block((void *)&tempMIDI, (void *)offset, sizeof(tempMIDI));
+    offset = offset + sizeof(tempMIDI);
     memcpy(&Voice[i], &tempMIDI, sizeof(Voice[i]));
-    /*
-       #ifdef PRINTDEBUG
+    
+    /*   #ifdef PRINTDEBUG
        Serial.print("DACConv addr: ");
        Serial.print((sizeof(int)*2+i*(sizeof(TempConv)+sizeof(TempMIDI))));
        Serial.print(" /2: ");
@@ -475,59 +468,53 @@ int ReadMIDIeeprom(void)
        #endif
     */
   }
-  NumVoices = numVoices;
-  VoiceMode = voiceMode;
-  VoiceOverlap = voiceOverlap;
-  ppqnCLOCK = lppqnCLOCK;
-  trigCLOCK = ( ppqnCLOCK * clockFactor );
-  return (NumVoices);
+  
+  GS.NumVoices = lGS.NumVoices;
+  GS.VoiceMode = lGS.VoiceMode;
+  SetOverlap(lGS.VoiceOverlap);
+  SetPpqnClock(lGS.PpqnCLOCK);
+  SetClockMode(lGS.ClockMode);
+  SetSTSPMode(lGS.StSpMode);
+  return (GS.NumVoices);
 }
 
 // Write MIDI properties from eeprom
 void WriteMIDIeeprom(void)
 {
   //return;
-  int i;
-  int offset = 0;
+  int i, offset = 0;
 #ifdef PRINTDEBUG
   Serial.println("Write MIDI");
   Serial.print("Num Voices: ");
-  Serial.print(NumVoices);
+  Serial.print(GS.NumVoices);
   Serial.print(" / Voice Mode: ");
-  Serial.println(VoiceMode);
+  Serial.println(GS.VoiceMode);
 #endif
 
   // Store in EEPROM number of channels and MIDI mode
-  eeprom_write_block((void *)&NumVoices, (void *)offset, sizeof(NumVoices));
-  offset = sizeof(int);
+  eeprom_write_block((void *)&GS, (void *)offset, sizeof(GS));
 
-  eeprom_write_block((void *)&VoiceMode, (void *)offset, sizeof(VoiceMode));
-  offset = offset + sizeof(int);
-
-  eeprom_write_block((void *)&VoiceOverlap, (void *)offset, sizeof(VoiceOverlap));
-  offset = offset + sizeof(bool);
-
-  eeprom_write_block((void *)&ppqnCLOCK, (void *)offset, sizeof(ppqnCLOCK));
-  offset = offset + sizeof(int);
-
+  offset = offset + sizeof(GS);
+  
   // Store DAC channels and MIDI config
   for (i = 0; i < 4; i++) {
     if (i == 0) {
       DACConv[i].rangeDAC = 4093;
     }
-    eeprom_write_block((const void *)&DACConv[i],
-                       (void *)(offset + i *
-                                (sizeof(DACConv[i]) + sizeof(Voice[i]))),
-                       sizeof(DACConv[i]));
-    eeprom_write_block((const void *)&Voice[i],
-                       (void *)(offset + sizeof(DACConv[i]) + i *
-                                (sizeof(Voice[i]) + sizeof(DACConv[i]))), sizeof(Voice[i]));
+    //offset =  offset + i * (sizeof(DACConv[i]) + sizeof(Voice[i]));
+    eeprom_write_block((const void *)&DACConv[i], (void *)offset, sizeof(DACConv[i]));
+
+    //offset = offset + sizeof(DACConv[i]) + i * (sizeof(Voice[i]) + sizeof(DACConv[i]));
+    offset = offset + sizeof(DACConv[i]);
+    eeprom_write_block((const void *)&Voice[i], (void *)offset, sizeof(Voice[i]));
+
+    offset = offset + sizeof(Voice[i]);
     /*
        #ifdef PRINTDEBUG
        Serial.print("DACConv addr: ");
-       Serial.print((sizeof(NumVoices)*2+i*(sizeof(DACConv[i])+sizeof(Voice[i]))));
+       Serial.print((sizeof(GS.NumVoices)*2+i*(sizeof(DACConv[i])+sizeof(Voice[i]))));
        Serial.print(" /2: ");
-       Serial.println((sizeof(NumVoices)*2+sizeof(DACConv[i])+i*(sizeof(Voice[i])+sizeof(DACConv[i]))));
+       Serial.println((sizeof(GS.NumVoices)*2+sizeof(DACConv[i])+i*(sizeof(Voice[i])+sizeof(DACConv[i]))));
        Serial.print("DACConv 1: ");
        Serial.print(DACConv[i].DACPoints[1]);
        Serial.print(" /2: ");
@@ -536,18 +523,42 @@ void WriteMIDIeeprom(void)
     */
   }
 }
+
 //Retrig => Overlap=false
 void SetOverlap(bool overlap) {
-  VoiceOverlap = overlap;
-  WriteMIDIeeprom();
+  GS.VoiceOverlap = overlap;
+}
+
+void SetPpqnClock(int ppqnClock){
+  GS.PpqnCLOCK = ppqnClock;
+  trigCLOCK = ( GS.PpqnCLOCK * clockFactor );
+}
+
+void SetClockMode(int mode){
+  GS.ClockMode = mode;
+}
+
+void SetSTSPMode(int mode){
+  GS.StSpMode = mode;
+}
+
+//Save current VoiceMode
+void SetCurrentVoiceMode()
+{
+  GS.CurrentVoiceMode = GS.VoiceMode;
+}
+
+void ResetToCurrentVoiceMode(void)
+{
+  SetVoiceMode(GS.CurrentVoiceMode);
 }
 
 // Set default MIDI properties manually
 void SetVoiceMode(int mode)
 {
-  if (VoiceMode >= MIDIMODE_LAST) return;
+  if (GS.VoiceMode >= MIDIMODE_LAST) return;
 
-  VoiceMode = mode;
+  GS.VoiceMode = mode;
   // Reset pointers
   for (int i = 0; i < 4; i++) {
     Voice[i].pitchDAC = NULL;
@@ -561,7 +572,7 @@ void SetVoiceMode(int mode)
 
   switch (mode) {
     case MONOMIDI:
-      NumVoices = 1;
+      GS.NumVoices = 1;
       Voice[0].pitchDAC = &DACConv[0];
       Voice[0].velDAC = &DACConv[1];
       Voice[0].bendDAC = &DACConv[2];
@@ -575,7 +586,7 @@ void SetVoiceMode(int mode)
       Voice[0].modDAC->rangeInput = 127;
       break;
     case DUALMIDI:
-      NumVoices = 2;
+      GS.NumVoices = 2;
       Voice[0].pitchDAC = &DACConv[0];
       Voice[0].velDAC = &DACConv[1];
       Voice[0].gatePin = PINGATE;
@@ -586,7 +597,7 @@ void SetVoiceMode(int mode)
       Voice[1].midiChannel = 2;
       break;
     case QUADMIDI:
-      NumVoices = 4;
+      GS.NumVoices = 4;
       Voice[0].pitchDAC = &DACConv[0];
       Voice[0].gatePin = PINGATE;
       Voice[0].midiChannel = 1;
@@ -604,7 +615,7 @@ void SetVoiceMode(int mode)
     case DUOLAST:
     case DUOHIGH:
     case DUOLOW:
-      NumVoices = 2;
+      GS.NumVoices = 2;
       Voice[0].pitchDAC = &DACConv[0];
       Voice[0].velDAC = &DACConv[1];
       Voice[0].gatePin = PINGATE;
@@ -618,7 +629,7 @@ void SetVoiceMode(int mode)
     case POLYLAST:
     case POLYHIGH:
     case POLYLOW:
-      NumVoices = 4;
+      GS.NumVoices = 4;
       Voice[0].pitchDAC = &DACConv[0];
       Voice[0].gatePin = PINGATE;
       Voice[0].midiChannel = 1;
@@ -643,6 +654,4 @@ void SetVoiceMode(int mode)
   Serial.print("New Mode: ");
   Serial.println(mode);
 #endif
-
-  WriteMIDIeeprom();
 }

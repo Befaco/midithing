@@ -34,7 +34,7 @@ VoiceSelector Selector;
 
 static int countCLOCK = 1;
 
-unsigned long trigCLOCK = ( ppqnCLOCK * clockFactor );
+unsigned long trigCLOCK = ( GS.PpqnCLOCK * clockFactor );
 
 static byte MIDIRun = 0; // Set to 0 to init in stop condition
 
@@ -49,7 +49,7 @@ void HandleNoteOn(byte channel, byte pitch, byte velocity)
   // If in cal mode, adjust notes
   if (   LearnMode == ENTERCAL
          && velocity > 0
-         && checkMenuMode(pitch) != 0
+         && checkMenuMode(channel) != 0
          && MenuModeHandle(channel, pitch, velocity)) {
     //Calibration
     return;  // do not play note if calibration key pressed
@@ -63,7 +63,7 @@ void HandleNoteOn(byte channel, byte pitch, byte velocity)
 #endif
     return; // received channel not any active MIDI
   }
-  if (VoiceMode == PERCTRIG && channel == PERCCHANNEL && velocity > 0) {
+  if (GS.VoiceMode == PERCTRIG && channel == PERCCHANNEL && velocity > 0) {
     // Play percussion
     Gates[MIDIactive].setBlink(TRIGPERCUSSION, 1, 1); // Play trigger
     Blink.setBlink(100, 1, 1, PINLED);  // Blink once every Note ON (not in CAL/LEARN mode)
@@ -100,7 +100,7 @@ void HandleNoteOff(byte channel, byte pitch, byte velocity)
     return; // received channel not any active MIDI
   }
   // Do nothing in percussion mode
-  if (VoiceMode == PERCTRIG && channel == 10) {
+  if (GS.VoiceMode == PERCTRIG && channel == 10) {
     return;
   }
 
@@ -144,7 +144,7 @@ void HandleControlChange(byte channel, byte number, byte value)
       Voice[MIDIactive].processMod(value);
       break; // Handle only CC #1 = Modulation
     case 123:
-      for (int i = 0; i < NumVoices; i++) {
+      for (int i = 0; i < GS.NumVoices; i++) {
         Voice[i].playNoteOff(); // All notes off received
         Voice[i].notes.clear(); // 0 notes on
       }
@@ -161,8 +161,16 @@ void HandleControlChange(byte channel, byte number, byte value)
 void HandleStart(void)
 {
   MIDIRun = 1;
-  countCLOCK = ppqnCLOCK;
-  Gates[9].setBlink(TRIGSTART, 1, 1);
+  countCLOCK = GS.PpqnCLOCK;
+  switch (GS.StSpMode) {
+    case NORMAL_STSP:
+      Gates[9].setBlink(TRIGSTART, 1, 1);
+      break;
+    case UPDOWN_STSP:
+      Blink.setBlink(100, 0, -1, PINSTARTSTOP);
+      break;
+  }
+
 #ifdef PRINTDEBUG
   Serial.println("MIDI Start");
 #endif
@@ -172,7 +180,14 @@ void HandleContinue(void)
 {
   MIDIRun = 1;
   countCLOCK = 0;
-  Gates[9].setBlink(TRIGSTART, 1, 1);
+  switch (GS.StSpMode) {
+    case NORMAL_STSP:
+      Gates[9].setBlink(TRIGSTART, 1, 1);
+      break;
+    case UPDOWN_STSP:
+      Blink.setBlink(100, 0, -1, PINSTARTSTOP);
+      break;
+  }
 #ifdef PRINTDEBUG
   Serial.println("MIDI Continue");
 #endif
@@ -182,6 +197,8 @@ void HandleStop(void)
 {
   MIDIRun = 0;
   countCLOCK = 0;
+  ResetBlink( );
+  //Blink.setBlink(0, 0, 0, PINSTARTSTOP);
 #ifdef PRINTDEBUG
   Serial.println("MIDI Stop");
 #endif
@@ -189,8 +206,9 @@ void HandleStop(void)
 
 void HandleClock(void)
 {
-  //( !MIDIRun) return; // Only when MIDI run command received
-  if (countCLOCK < ppqnCLOCK) {
+  if (GS.ClockMode == RUNNING_CLOCK && !MIDIRun) return;
+
+  if (countCLOCK < GS.PpqnCLOCK) {
     countCLOCK++;
   } else {
     countCLOCK = 1;
@@ -198,5 +216,5 @@ void HandleClock(void)
     Gates[4].setBlink(trigCLOCK, 1, 1);
   }
 }
-
 #endif  //STARTSTOPCONT
+

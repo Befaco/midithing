@@ -35,60 +35,65 @@ void AllNotesOff(void);
 int ReadMIDIeeprom(void);
 void WriteMIDIeeprom(void);
 void SetVoiceMode(int mode);
+void SetCurrentVoiceMode(void);
+void ResetToCurrentVoiceMode(void);
 void SetOverlap(bool overlap);
+void SetClockMode(int mode);
+void SetSTSPMode(int mode);
+void SetPpqnClock(int ppqnClock);
 // Learn mode
 void DoLearnCycle(void);
 void EnterLearnMode(void);
+void BckUpAllLearn(void);
+void RecoveryAllLearn(void);
+void ReplicateVoices(void);
+void PolyModeReplicateVoices(int mode);
 // Calibration mode
 void DoCalCycle(void);
 void EnterCalMode(void);
-void EndCalMode(void);
+void EndCalMode(bool cancel);
+void CancelMenuMode(void);
 byte MenuModeHandle(byte channel, byte pitch, byte velocity);
 byte getElementalPitch(byte pitch);
 int PercussionNoteGate(byte pitch);
 
 //MIDI
 class MIDICV;
-extern MIDICV Voice[4]; // Define up to four MIDI channels
-extern int NumVoices; // Number of MIDI channels in use
-extern int VoiceMode; // MIDI mode Set to quad mode by default
-extern bool VoiceOverlap; // Overlap option for mono modes
-extern int ppqnCLOCK;
+extern MIDICV Voice[4]; // Define up to four MIDI channels, current voices
+extern GENERALSETTINGS GS;
 extern unsigned long trigCLOCK;
 extern long VoiceOVLTime;
 extern byte LastVel;
 extern byte LastNote;
 #define MAXNOTES 8
 
-static bool IsPolyMode() {
-  return (   VoiceMode == POLYFIRST
-             || VoiceMode == POLYLAST
-             || VoiceMode == POLYHIGH
-             || VoiceMode == POLYLOW
-             || VoiceMode == DUOFIRST
-             || VoiceMode == DUOLAST
-             || VoiceMode == DUOHIGH
-             || VoiceMode == DUOLOW );
+static bool IsPolyMode(int Mode) {
+  return (   Mode == POLYFIRST
+             || Mode == POLYLAST
+             || Mode == POLYHIGH
+             || Mode == POLYLOW
+             || Mode == DUOFIRST
+             || Mode == DUOLAST
+             || Mode == DUOHIGH
+             || Mode == DUOLOW );
 }
 
-static bool IsPoly4Mode() {
-  return (   VoiceMode == POLYFIRST
-             || VoiceMode == POLYLAST
-             || VoiceMode == POLYHIGH
-             || VoiceMode == POLYLOW );
+static bool IsPoly4Mode(int Mode) {
+  return (   Mode == POLYFIRST
+             || Mode == POLYLAST
+             || Mode == POLYHIGH
+             || Mode == POLYLOW );
 }
 
-static bool IsPoly2Mode() {
-  return (   VoiceMode == DUOFIRST
-             || VoiceMode == DUOLAST
-             || VoiceMode == DUOHIGH
-             || VoiceMode == DUOLOW );
+static bool IsPoly2Mode(int Mode) {
+  return (   Mode == DUOFIRST
+             || Mode == DUOLAST
+             || Mode == DUOHIGH
+             || Mode == DUOLOW );
 }
-
-
 
 static bool IsPercMode() {
-  return (VoiceMode == PERCTRIG || VoiceMode == PERCGATE);
+  return (GS.VoiceMode == PERCTRIG || GS.VoiceMode == PERCGATE);
 }
 
 struct NoteEvent {
@@ -109,8 +114,7 @@ class NoteEventInfo {
           setbit128(noteField_, (size_t)pitch);
           events_[count_++] = { pitch, velocity };
         }
-      }
-      else {
+      } else {
         if (isbitset128(noteField_, (size_t)pitch)) {
           unsetbit128(noteField_, (size_t)pitch);
           // Remove note from the list
@@ -181,8 +185,10 @@ class MIDICV {
   public:
     // Var MIDI
     byte midiChannel     = 1; // Initial channel
-    byte midiChannel_old = 0; // Initial channel
-    byte minInput_old    = 0;
+    byte midiChannel_current = 0; // Backup for cancel learn
+    byte minInput_current    = 0;
+    byte midiChannel_bck     = 0; // Backup for change mode
+    byte minInput_bck        = 0;
     byte gatePin = PINGATE;
 
     NoteEventInfo notes;
@@ -208,9 +214,12 @@ class MIDICV {
       return notes.isPlaying(pitch);
     }
     bool ChannelExists(byte channel, byte mininput, byte learnstep);
-    void SetOldLearn(byte channel, byte mininput);
+    void SetCurrentLearn(byte channel, byte mininput);
     void SetLearn(byte channel, byte mininput);
-    void ResetOldLearn(void);
+    void SetBckLearn(byte channel, byte mininput);
+    void BckUpLearn(void);
+    void RecoveryLearn(void);
+    void ReSetCurrentLearn(void);
     void ResetLearn(void);
     void InitLearn(void);
 };
@@ -235,13 +244,12 @@ class VoiceSelector {
 
       Voice[channel].processNoteOff(pitch);
       removeFromPlaying(pitch);
-      if (IsPolyMode() && popNextNoteFromPool(&pitch)) {
+      if (IsPolyMode(GS.VoiceMode) && popNextNoteFromPool(&pitch)) {
         Voice[channel].processNoteOn(pitch, 64);
-        if (VoiceMode == POLYLAST || VoiceMode == DUOLAST) {
+        if (GS.VoiceMode == POLYLAST || GS.VoiceMode == DUOLAST) {
           // the note being pulled from the pool will be older than anything playing
           addToPlayingFront(pitch);
-        }
-        else {
+        } else {
           addToPlaying(pitch);
         }
       }
@@ -255,12 +263,12 @@ class VoiceSelector {
         return (PercussionNoteGate(pitch));
       }
 
-      if (IsPolyMode()) {
+      if (IsPolyMode(GS.VoiceMode)) {
         return getPolyTargetChannel(channel, pitch, velocity);
       }
 
       // In other modes, check if received one is an active channel
-      for (int i = 0; i < NumVoices; i++) {
+      for (int i = 0; i < GS.NumVoices; i++) {
         if (Voice[i].midiChannel == channel && Voice[i].pitchDAC->minInput <= pitch) {
           return (i);
         }
@@ -279,7 +287,7 @@ class VoiceSelector {
       if (velocity) *velocity = 0;
 
       if (!poolCount) return false;
-      switch (VoiceMode) {
+      switch (GS.VoiceMode) {
         case POLYFIRST:
         case DUOFIRST:
           pool_.getEvent(0, pitch);
@@ -328,42 +336,42 @@ class VoiceSelector {
 
     void addToPlaying(byte pitch, byte velocity = 64)
     {
-      if (IsPolyMode()) {
+      if (IsPolyMode(GS.VoiceMode)) {
         playing_.setPlaying(pitch, velocity);
       }
     }
 
     void addToPlayingFront(byte pitch, byte velocity = 64)
     {
-      if (IsPolyMode()) {
+      if (IsPolyMode(GS.VoiceMode)) {
         playing_.setPlayingFront(pitch, velocity);
       }
     }
 
     void removeFromPlaying(byte pitch)
     {
-      if (IsPolyMode()) {
+      if (IsPolyMode(GS.VoiceMode)) {
         playing_.setPlaying(pitch, 0);
       }
     }
 
     void addToPool(byte pitch, byte velocity = 64)
     {
-      if (IsPolyMode()) {
+      if (IsPolyMode(GS.VoiceMode)) {
         pool_.setPlaying(pitch, velocity);
       }
     }
 
     void addToPoolFront(byte pitch, byte velocity = 64)
     {
-      if (IsPolyMode()) {
+      if (IsPolyMode(GS.VoiceMode)) {
         pool_.setPlayingFront(pitch, velocity);
       }
     }
 
     void removeFromPool(byte pitch)
     {
-      if (IsPolyMode()) {
+      if (IsPolyMode(GS.VoiceMode)) {
         pool_.setPlaying(pitch, 0);
       }
     }
@@ -373,7 +381,7 @@ class VoiceSelector {
       byte highestPitch = 0;
       byte highestChannel = 0;
 
-      for (int i = 0; i < NumVoices; i++) {
+      for (int i = 0; i < GS.NumVoices; i++) {
         if (Voice[i].notes.getCount() && Voice[i].midiChannel == channel) {
           byte testPitch;
           Voice[i].notes.getLastEvent(&testPitch); // should only be one
@@ -405,7 +413,7 @@ class VoiceSelector {
       byte lowestPitch = 127;
       byte lowestChannel = 0;
 
-      for (int i = 0; i < NumVoices; i++) {
+      for (int i = 0; i < GS.NumVoices; i++) {
         if (Voice[i].notes.getCount() && Voice[i].midiChannel == channel) {
           byte testPitch;
           Voice[i].notes.getLastEvent(&testPitch); // should only be one
@@ -449,7 +457,7 @@ class VoiceSelector {
         return -1;
       }
 
-      for (int i = 0; i < NumVoices; i++) {
+      for (int i = 0; i < GS.NumVoices; i++) {
         if (Voice[i].midiChannel == channel) {
           byte testPitch;
           Voice[i].notes.getLastEvent(&testPitch); // should only be one
@@ -473,21 +481,25 @@ class VoiceSelector {
 
     int getPolyTargetChannel(byte channel, byte pitch, byte velocity)
     {
+      //look for a mininmum pitch
+      if ( pitch < Voice[0].pitchDAC->minInput ) {
+        return -1;
+      }
 
       if (Voice[0].midiChannel != channel) {
         //IN poly mode, Only one channel is Configured for all voices, first voice have the right channel, Do not try to play note in different channel
         return -1;
       }
-      
+
       // first check all channels for the note
-      for (int i = 0; i < NumVoices; i++) {
+      for (int i = 0; i < GS.NumVoices; i++) {
         if (Voice[i].midiChannel == channel && Voice[i].isPlayingNote(pitch)) {
           return i;
         }
       }
 
       // then look for an empty channel
-      for (int i = 0; i < NumVoices; i++) {
+      for (int i = 0; i < GS.NumVoices; i++) {
         if (Voice[i].midiChannel == channel && !Voice[i].notes.getCount()) {
           return i;
         }
@@ -498,7 +510,7 @@ class VoiceSelector {
         return -1;
       }
 
-      switch (VoiceMode) {
+      switch (GS.VoiceMode) {
         case POLYFIRST:
         case DUOFIRST: // the last-played note is added to the pool, available only if a channel is freed
           addToPool(pitch);
