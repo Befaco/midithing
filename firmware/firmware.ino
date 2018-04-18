@@ -2,6 +2,8 @@
 //
 // Author: Sergio Retamero (sergio.retamero@gmail.com)
 //
+// Enhancemnt and Bug fixing: Jeremy Bernstein
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
@@ -23,12 +25,11 @@
 // See http://creativecommons.org/licenses/MIT/ for more information.
 //
 // -----------------------------------------------------------------------------
-// V2 - for beta testing
-//Bugs Solved:
-//- Added Learn continuity system
-//- Fixed Poly priority and voice steal
-//- Fixed processed notes under min note in poly mode
-//- optimized write to eprom mode 
+// V2 - 2018
+// Author: Alberto Navarro (albertonafu@gmail.com) 
+// Enhacements, new functions, new modes, usability, user interface and bug fixings.
+// Polyphonic mode base code by Jeremy Bernstein.
+// -----------------------------------------------------------------------------
 
 #include "firmware.h"
 #include "Blinker.h"
@@ -143,7 +144,7 @@ void setup()
 #ifdef PRINTDEBUG
     Serial.println("No EEPROM Read");
 #endif
-    // Set Mode manually, default values
+    // Set Mode manually, default values and initialization
     SetVoiceMode(QUADMIDI);
     BckUpAllLearn();
     SetOverlap(false);
@@ -239,6 +240,7 @@ void loop()
     // In Learn mode, enter learn cycle
     switch (LearnMode) {
       case NORMALMODE:
+        //retrig if active and voice is poly mode
         if (!GS.VoiceOverlap && !IsPolyMode(GS.VoiceMode)) {
           RetrigProcess();
         }
@@ -274,7 +276,6 @@ static void RetrigProcess() {
 
   unsigned long now = millis();
   //unsigned long noteOffDuration = 0;
-  //for (int i = 1; i < 5; i++) {
  for (int i = 1; i <= GS.NumVoices; i++) {
     //Retrig only performed when an existent gate is running (values set in MIDIClass.ino --> MIDICV::playNote )
     if (Retrig[i].DoRetrig == true && Retrig[i].NoteOffTrig == false) {
@@ -288,7 +289,7 @@ static void RetrigProcess() {
 
       } else {
         //noteOffDuration = now - Retrig[i].CycleLastTime;
-        //Value of comparision (20) is the delay betwheen retrig action
+        //Value of comparision (3) is the delay between retrig action
         if ( (now - Retrig[i].CycleLastTime) >= 3) {
           Retrig[i].DoRetrig = false;
           Retrig[i].RetrigStarted = false;

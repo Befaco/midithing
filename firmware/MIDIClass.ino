@@ -2,6 +2,8 @@
 //
 // Author: Sergio Retamero (sergio.retamero@gmail.com)
 //
+// Enhancemnt and Bug fixing: Jeremy Bernstein
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
@@ -23,7 +25,11 @@
 // See http://creativecommons.org/licenses/MIT/ for more information.
 //
 // -----------------------------------------------------------------------------
-//
+// V2 - 2018
+// Author: Alberto Navarro (albertonafu@gmail.com) 
+// Enhacements, new functions, new modes, usability, user interface and bug fixings.
+// Polyphonic mode base code by Jeremy Bernstein.
+// -----------------------------------------------------------------------------
 
 MIDICV Voice[4];
 GENERALSETTINGS GS;
@@ -262,6 +268,7 @@ void MIDICV::LearnThis(byte channel, byte pitch, byte velocity)
   notes.clear();
   LearnStep++;
   if (ChannelExists(channel, pitch, LearnStep)) {
+    //Bad learning --> same step until OK
     BlinkKO();
     LearnStep--;
     channelExists = true;
@@ -270,40 +277,43 @@ void MIDICV::LearnThis(byte channel, byte pitch, byte velocity)
   switch (LearnStep) {
     case 1:
       if (!channelExists) {
+        //Ok blink
         delay(200);
         Blink.setBlink(100, 1, 1, PINGATE);
         delay(200);
         Blink.setBlink(0, 0, 0);
       }
-
+    
       if (GS.VoiceMode == MONOMIDI || IsPolyMode(GS.VoiceMode)) {
-        endLearn = true;
+        endLearn = true;  //Only one voice, one channel --> end 
       } else {
-        Blink.setBlink(100, 0, -1, PINGATE2);
+        Blink.setBlink(100, 0, -1, PINGATE2); //Next channel to learn
       }
 
       break;
     case 2:
       if (!channelExists) {
+        //Ok blink
         delay(200);
         Blink.setBlink(100, 1, 1, PINGATE2);
         delay(200);
         Blink.setBlink(0, 0, 0);
       }
       if (GS.VoiceMode == DUALMIDI) {
-        endLearn = true;
+        endLearn = true; //Dual voice = 2 channels --> end 
       } else {
-        Blink.setBlink(100, 0, -1, PINGATE3);
+        Blink.setBlink(100, 0, -1, PINGATE3); //Next Channel to learn
       }
       break;
     case 3:
       if (!channelExists) {
+        //OK blink
         delay(200);
         Blink.setBlink(100, 1, 1, PINGATE3);
         delay(200);
         Blink.setBlink(0, 0, 0);
       }
-      Blink.setBlink(100, 0, -1, PINGATE4);
+      Blink.setBlink(100, 0, -1, PINGATE4); //Next Channel to learn
       break;
     case 4:
 
@@ -314,7 +324,7 @@ void MIDICV::LearnThis(byte channel, byte pitch, byte velocity)
       Blink.setBlink(0, 0, 0);
       Blink.setBlink(0, 0, 0, PINLED);
       if (GS.VoiceMode == QUADMIDI) {
-        endLearn = true;
+        endLearn = true;  //Quad mode = 4 channels --> end
       }
       break;
   }
@@ -329,8 +339,6 @@ void MIDICV::LearnThis(byte channel, byte pitch, byte velocity)
   }
 }
 
-
-// All Notes off
 bool MIDICV::ChannelExists(byte channel, byte mininput, byte learnstep) {
   int i;
 
@@ -343,33 +351,34 @@ bool MIDICV::ChannelExists(byte channel, byte mininput, byte learnstep) {
   return false;
 }
 
+//Backup learn
 void MIDICV::SetBckLearn(byte channel, byte mininput) {
   midiChannel_bck = channel;
   minInput_bck    = mininput;
 }
-
+//Current Learn for recovery
 void MIDICV::SetCurrentLearn(byte channel, byte mininput) {
   midiChannel_current = channel;
   minInput_current    = mininput;
 }
-
+//Set active learn
 void MIDICV::SetLearn(byte channel, byte mininput) {
   midiChannel           = channel;
   pitchDAC->minInput    = mininput;
 }
-
+//Reset Current learn
 void MIDICV::ReSetCurrentLearn() {
   SetCurrentLearn(0, 0);
 }
-
+//Backup learn
 void MIDICV::BckUpLearn() {
   SetBckLearn(midiChannel, pitchDAC->minInput);
 }
-
+//Recovery Backup learn 
 void MIDICV::RecoveryLearn() {
   SetLearn(midiChannel_bck, minInput_bck);
 }
-
+//Recover active learn
 void MIDICV::ResetLearn() {        
   SetLearn(midiChannel_current, minInput_current);
 }
@@ -405,7 +414,7 @@ int PercussionNoteGate(byte pitch)
   return (-1);
 }
 
-// Check if received channel is any active MIDI
+// Turn off all notes
 void AllNotesOff(void)
 {
   for (int i = 0; i < GS.NumVoices; i++) {
@@ -529,15 +538,16 @@ void SetOverlap(bool overlap) {
   GS.VoiceOverlap = overlap;
 }
 
+//Set clock resolution
 void SetPpqnClock(int ppqnClock){
   GS.PpqnCLOCK = ppqnClock;
   trigCLOCK = ( GS.PpqnCLOCK * clockFactor );
 }
-
+//Set Clock mode
 void SetClockMode(int mode){
   GS.ClockMode = mode;
 }
-
+//Set Start/Stop Mode
 void SetSTSPMode(int mode){
   GS.StSpMode = mode;
 }

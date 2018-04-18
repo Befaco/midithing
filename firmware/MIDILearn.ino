@@ -2,6 +2,8 @@
 //
 // Author: Sergio Retamero (sergio.retamero@gmail.com)
 //
+// Enhancemnt and Bug fixing: Jeremy Bernstein
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
@@ -22,6 +24,11 @@
 //
 // See http://creativecommons.org/licenses/MIT/ for more information.
 //
+// -----------------------------------------------------------------------------
+// V2 - 2018
+// Author: Alberto Navarro (albertonafu@gmail.com) 
+// Enhacements, new functions, new modes, usability, user interface and bug fixings.
+// Polyphonic mode base code by Jeremy Bernstein.
 // -----------------------------------------------------------------------------
 
 //# define ERRORCYCLES 30
@@ -97,6 +104,7 @@ void EndCalMode(bool cancel)
   // Set normal mode
   LearnMode = NORMALMODE;
   if (cancel) {
+    //Set last active voice
     RecoverVoice();
   } else {
     //Reset Process calibration flag if setted
@@ -111,6 +119,7 @@ void EndCalMode(bool cancel)
 #endif
 }
 
+//Set Current Active voice
 void RecoverVoice(void) {
   ResetToCurrentVoiceMode( );
   for (int i = 0; i < GS.NumVoices; i++) {
@@ -408,6 +417,7 @@ byte checkMenuMode( byte channel )
   }
 }
 
+//Warning lightshow when entering in calc procedure
 void enterCalProc(void)
 {
   for (int i = 0; i < 10; i++) {

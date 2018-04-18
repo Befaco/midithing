@@ -2,6 +2,8 @@
 //
 // Author: Sergio Retamero (sergio.retamero@gmail.com)
 //
+// Enhancemnt and Bug fixing: Jeremy Bernstein
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
@@ -23,7 +25,11 @@
 // See http://creativecommons.org/licenses/MIT/ for more information.
 //
 // -----------------------------------------------------------------------------
-//
+// V2 - 2018
+// Author: Alberto Navarro (albertonafu@gmail.com) 
+// Enhacements, new functions, new modes, usability, user interface and bug fixings.
+// Polyphonic mode base code by Jeremy Bernstein.
+// -----------------------------------------------------------------------------
 
 //////////////////////////////////////////////
 // MIDI function definitions
@@ -164,13 +170,14 @@ void HandleStart(void)
   countCLOCK = GS.PpqnCLOCK;
   switch (GS.StSpMode) {
     case NORMAL_STSP:
+      //Once in Start (Reset)
       Gates[9].setBlink(TRIGSTART, 1, 1);
       break;
     case UPDOWN_STSP:
+      //Gate Up in start
       Blink.setBlink(100, 0, -1, PINSTARTSTOP);
       break;
   }
-
 #ifdef PRINTDEBUG
   Serial.println("MIDI Start");
 #endif
@@ -182,9 +189,11 @@ void HandleContinue(void)
   countCLOCK = 0;
   switch (GS.StSpMode) {
     case NORMAL_STSP:
+      //Once in Continue (Reset)
       Gates[9].setBlink(TRIGSTART, 1, 1);
       break;
     case UPDOWN_STSP:
+      //Gate Up in continue
       Blink.setBlink(100, 0, -1, PINSTARTSTOP);
       break;
   }
@@ -198,7 +207,6 @@ void HandleStop(void)
   MIDIRun = 0;
   countCLOCK = 0;
   ResetBlink( );
-  //Blink.setBlink(0, 0, 0, PINSTARTSTOP);
 #ifdef PRINTDEBUG
   Serial.println("MIDI Stop");
 #endif
@@ -206,8 +214,9 @@ void HandleStop(void)
 
 void HandleClock(void)
 {
+  //Clock out only when sequencer is playing (start/continue)
   if (GS.ClockMode == RUNNING_CLOCK && !MIDIRun) return;
-
+  //Clock out everytime receives clock in normal mode
   if (countCLOCK < GS.PpqnCLOCK) {
     countCLOCK++;
   } else {

@@ -23,7 +23,10 @@
 // See http://creativecommons.org/licenses/MIT/ for more information.
 //
 // -----------------------------------------------------------------------------
-//
+// V2 - 2018
+// Author: Alberto Navarro (albertonafu@gmail.com) 
+// Enhacements, new functions, new modes, usability, user interface and bug fixings.
+// -----------------------------------------------------------------------------
 
 #ifndef __MULTIPOINTCONV_H__
 #define __MULTIPOINTCONV_H__

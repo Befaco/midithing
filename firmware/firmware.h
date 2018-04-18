@@ -75,13 +75,13 @@ enum VoiceModes {
 };
 
 struct GENERALSETTINGS {
-  int NumVoices        = 0; // Number of MIDI channels in use
-  int VoiceMode        = QUADMIDI; // MIDI mode Set to quad mode by default
-  int CurrentVoiceMode = QUADMIDI;
-  bool VoiceOverlap    = false; // Overlap option for mono modes
-  int ClockMode        = NORMAL_CLOCK;
-  int PpqnCLOCK        = 24;
-  int StSpMode         = NORMAL_STSP;
+  int NumVoices        = 0;             // Number of MIDI channels in use
+  int VoiceMode        = QUADMIDI;      // MIDI mode Set to quad mode by default
+  int CurrentVoiceMode = QUADMIDI;      // Recovery pourposes
+  bool VoiceOverlap    = false;         // Overlap option for mono modes
+  int ClockMode        = NORMAL_CLOCK;  //Clock mode
+  int PpqnCLOCK        = 24;            //Clock resolution
+  int StSpMode         = NORMAL_STSP;   //Start/stop mode
 };
 
 
