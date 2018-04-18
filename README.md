@@ -2,7 +2,7 @@
 Firmware for the [Befaco](http://befaco.org) Eurorack MIDI module (MIDI Thing).
 
 ## Requirements
-You need Arduino >= 1.6.3. REcommended 1.8.5
+You need Arduino >= 1.6.3. Recommended 1.8.5
 
 Additionally you will need the following libraries installed (see the [Arduino Guide](https://www.arduino.cc/en/Guide/Libraries) on how to do this):
 
