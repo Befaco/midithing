@@ -2,6 +2,8 @@
 //
 // Author: Sergio Retamero (sergio.retamero@gmail.com)
 //
+// Enhancemnt and Bug fixing: Jeremy Bernstein
+//
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
 // in the Software without restriction, including without limitation the rights
@@ -23,7 +25,11 @@
 // See http://creativecommons.org/licenses/MIT/ for more information.
 //
 // -----------------------------------------------------------------------------
-//
+// V2 - 2018
+// Author: Alberto Navarro (albertonafu@gmail.com) 
+// Enhacements, new functions, new modes, usability, user interface and bug fixings.
+// Polyphonic mode base code by Jeremy Bernstein.
+// -----------------------------------------------------------------------------
 
 // Make conversion interpolating between points
 unsigned int MultiPointConv::intervalConvert(int inp)
@@ -76,8 +82,13 @@ byte MultiPointConv::Processnote(byte channel, byte pitch, byte velocity)
   if (val < 0) {
     return (0);
   }
+  
   if (val > 119) {
     val = 119;  // max 10 oct. = 120 notes
+  }
+
+  if (val == 1) {
+    return (0);
   }
 
   // Look for interval
