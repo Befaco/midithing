@@ -1,4 +1,4 @@
-# MIDI Thing v2
+# MIDI Thing v2.1
 Firmware for the [Befaco](http://befaco.org) Eurorack MIDI module (MIDI Thing).
 
 ## Requirements
