@@ -30,7 +30,7 @@ Download the libraries  (Bounce, mcp4728 and MIDI) and install them following th
 Connect the programmer to the ICSP conector in the back of the module. Pay special attention to the pinout when you plug the module. You can check this link for more information about ICSP https://www.arduino.cc/en/Tutorial/ArduinoISP
 
 6. Upgrading
-Press "Open" and search the file "firmware.ino" located on the "firmware" folder. Go to "Sketch" and hit "Upload using programmer".
+Press "Open" and search the file "firmware.ino" located on the "firmware" folder. Select "Tools > Board > Arduino/Genuino Uno". Go to "Sketch" and hit "Upload using programmer".
 
 If everything goes well you should see a "Done uploading" message in a few seconds. If something happens during the upgrade, check your Arduino settings following the instructions of this link https://www.arduino.cc/en/Guide/Troubleshooting
 
