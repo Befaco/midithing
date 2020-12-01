@@ -8,7 +8,7 @@ Additionally you will need the following libraries installed (see the [Arduino G
 
 * [MIDI](https://github.com/FortySevenEffects/arduino_midi_library/releases/tag/4.3.1) If you use Library manager install version 4.3.1. 
 * [Bounce2](https://github.com/thomasfredericks/Bounce2) 
-* [mcp4728](https://code.google.com/p/neuroelec/downloads/detail?name=mcp4728_library-v1.3.zip)
+* [mcp4728](https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/neuroelec/mcp4728_library_v1.3_for_Arduino_1.0.zip)
 
 
 ## Uploading the firmware
