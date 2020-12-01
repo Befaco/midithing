@@ -6,7 +6,7 @@ You need Arduino >= 1.6.3. Recommended 1.8.5
 
 Additionally you will need the following libraries installed (see the [Arduino Guide](https://www.arduino.cc/en/Guide/Libraries) on how to do this):
 
-* [MIDI](https://github.com/FortySevenEffects/arduino_midi_library)
+* [MIDI](https://github.com/FortySevenEffects/arduino_midi_library) Use Library manager and install 4.3.1. 
 * [Bounce2](https://github.com/thomasfredericks/Bounce2) 
 * [mcp4728](https://code.google.com/p/neuroelec/downloads/detail?name=mcp4728_library-v1.3.zip)
 
