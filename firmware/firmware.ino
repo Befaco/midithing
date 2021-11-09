@@ -28,6 +28,10 @@
 // Enhacements, new functions, new modes, usability, user interface and bug fixings.
 //  - Bug fixed in ST/SP clock mode
 // -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// V2.2 - November 2021
+//  - Updated code to work with MIDI library version 5.0.2
+// -----------------------------------------------------------------------------
 
 #include "firmware.h"
 #include "Blinker.h"
@@ -62,7 +66,15 @@ RetrigCycle Retrig[5];
 Bounce Bouncer = Bounce(); // will be configured in setup()
 unsigned long BouncerLastTime = 0;
 
+//Use this code for old MIDI library ( v.4.3.1)
+/*
 struct MIDISettings : public midi::DefaultSettings {
+  static const bool UseRunningStatus = false;
+  static const bool Use1ByteParsing = false;
+};
+*/
+
+struct MIDISettings : public midi::DefaultSerialSettings {
   static const bool UseRunningStatus = false;
   static const bool Use1ByteParsing = false;
 };
