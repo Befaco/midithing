@@ -31,6 +31,7 @@
 // -----------------------------------------------------------------------------
 // V2.2 - November 2021
 //  - Updated code to work with MIDI library version 5.0.2
+//  - Fixed bug in perctrig led output.
 // -----------------------------------------------------------------------------
 
 #include "firmware.h"
