@@ -23,15 +23,9 @@
 // See http://creativecommons.org/licenses/MIT/ for more information.
 //
 // -----------------------------------------------------------------------------
-// V2.1 - Ago18 2018
+// V2 - 2018
 // Author: Alberto Navarro (albertonafu@gmail.com) 
 // Enhacements, new functions, new modes, usability, user interface and bug fixings.
-//  - Bug fixed in ST/SP clock mode
-// -----------------------------------------------------------------------------
-// -----------------------------------------------------------------------------
-// V2.2 - November 2021
-//  - Updated code to work with MIDI library version 5.0.2
-//  - Fixed bug in perctrig led output.
 // -----------------------------------------------------------------------------
 
 #include "firmware.h"
@@ -62,20 +56,12 @@ struct RetrigCycle {
   bool NoteOffTrig = false;
 };
 
-RetrigCycle Retrig[5];
+RetrigCycle Retrig[6];
 
 Bounce Bouncer = Bounce(); // will be configured in setup()
 unsigned long BouncerLastTime = 0;
 
-//Use this code for old MIDI library ( v.4.3.1)
-/*
 struct MIDISettings : public midi::DefaultSettings {
-  static const bool UseRunningStatus = false;
-  static const bool Use1ByteParsing = false;
-};
-*/
-
-struct MIDISettings : public midi::DefaultSerialSettings {
   static const bool UseRunningStatus = false;
   static const bool Use1ByteParsing = false;
 };
@@ -120,7 +106,7 @@ void setup()
   }
 
   // Init triggers gates
-  Gates[0].pinLED = PITCHCV + 128;
+  Gates[0].pinLED = PITCHCV + 18;
   Gates[1].pinLED = VELOC + 128;
   Gates[2].pinLED = MODUL + 128;
   Gates[3].pinLED = BEND + 128;
@@ -251,7 +237,7 @@ void loop()
     // In Learn mode, enter learn cycle
     switch (LearnMode) {
       case NORMALMODE:
-        //retrig if active and voice is poly mode
+        //retrig if active and voice is not poly mode
         if (!GS.VoiceOverlap && !IsPolyMode(GS.VoiceMode)) {
           RetrigProcess();
         }
@@ -287,36 +273,36 @@ static void RetrigProcess() {
 
   unsigned long now = millis();
   //unsigned long noteOffDuration = 0;
- for (int i = 1; i <= GS.NumVoices; i++) {
+ for (int i = 0; i < GS.NumVoices; i++) {
     //Retrig only performed when an existent gate is running (values set in MIDIClass.ino --> MIDICV::playNote )
-    if (Retrig[i].DoRetrig == true && Retrig[i].NoteOffTrig == false) {
+    if (Retrig[Voice[i].gatePin].DoRetrig == true && Retrig[Voice[i].gatePin].NoteOffTrig == false) {
 
       //Note off first time
-      if (Retrig[i].RetrigStarted == false) {
+      if (Retrig[Voice[i].gatePin].RetrigStarted == false) {
 
-        Retrig[i].RetrigStarted = true;
-        Retrig[i].CycleLastTime = now;
-        digitalWrite(i, LOW);
+        Retrig[Voice[i].gatePin].RetrigStarted = true;
+        Retrig[Voice[i].gatePin].CycleLastTime = now;
+        digitalWrite(Voice[i].gatePin, LOW);
 
       } else {
         //noteOffDuration = now - Retrig[i].CycleLastTime;
         //Value of comparision (3) is the delay between retrig action
-        if ( (now - Retrig[i].CycleLastTime) >= 3) {
-          Retrig[i].DoRetrig = false;
-          Retrig[i].RetrigStarted = false;
-          Retrig[i].CycleLastTime = 0;
-          digitalWrite(i, HIGH);
+        if ( (now - Retrig[Voice[i].gatePin].CycleLastTime) >= 3) {
+          Retrig[Voice[i].gatePin].DoRetrig = false;
+          Retrig[Voice[i].gatePin].RetrigStarted = false;
+          Retrig[Voice[i].gatePin].CycleLastTime = 0;
+          digitalWrite(Voice[i].gatePin, HIGH);
         } else {
-          digitalWrite(i, LOW);
+          digitalWrite(Voice[i].gatePin, LOW);
         }
       }
     }
 
-    if (Retrig[i].NoteOffTrig == true) {
-      digitalWrite(i, LOW);
-      Retrig[i].NoteOffTrig = false;
-      Retrig[i].DoRetrig = false;
-      Retrig[i].RetrigStarted = false;
+    if (Retrig[Voice[i].gatePin].NoteOffTrig == true) {
+      digitalWrite(Voice[i].gatePin, LOW);
+      Retrig[Voice[i].gatePin].NoteOffTrig = false;
+      Retrig[Voice[i].gatePin].DoRetrig = false;
+      Retrig[Voice[i].gatePin].RetrigStarted = false;
     }
   }
 }
@@ -383,4 +369,3 @@ void BlinkSaving(void) {
   Blink.setBlink(100, 0, -1, PINLED);
   Blink.setBlink(100, 0, -1, PINLED2);
 }
-
