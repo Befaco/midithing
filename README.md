@@ -24,8 +24,10 @@ Go to the official Arduino website https://www.arduino.cc/en/Main/Software and d
 Go to https://github.com/Befaco/midithing and press "clone or download" to download the repository to your computer. Extract the zip file and copy "firmware" folder to your sketchbook folder. 
 
 4. Install the libraries
-Download the libraries  (Bounce, mcp4728 and MIDI) and install them following the instructions from this link https://www.arduino.cc/en/Guide/Libraries
-
+Download the libraries from Library manager (Bounceand MIDI) and install them following the instructions from this link https://www.arduino.cc/en/Guide/Libraries
+Keep in mind MCP library must be installed from the following link. Do not use library manager one:
+ https://code.google.com/archive/p/neuroelec/downloads 
+ 
 5. Connecting the module
 Connect the programmer to the ICSP conector in the back of the module. Pay special attention to the pinout when you plug the module. You can check this link for more information about ICSP https://www.arduino.cc/en/Tutorial/ArduinoISP
 
