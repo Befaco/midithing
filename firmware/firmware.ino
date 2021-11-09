@@ -119,7 +119,7 @@ void setup()
   }
 
   // Init triggers gates
-  Gates[0].pinLED = PITCHCV + 18;
+  Gates[0].pinLED = PITCHCV + 128;
   Gates[1].pinLED = VELOC + 128;
   Gates[2].pinLED = MODUL + 128;
   Gates[3].pinLED = BEND + 128;
