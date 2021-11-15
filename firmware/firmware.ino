@@ -22,10 +22,20 @@
 //
 // See http://creativecommons.org/licenses/MIT/ for more information.
 //
-// -----------------------------------------------------------------------------
-// V2 - 2018
+// V2.1 - Ago18 2018
 // Author: Alberto Navarro (albertonafu@gmail.com) 
 // Enhacements, new functions, new modes, usability, user interface and bug fixings.
+//  - Bug fixed in ST/SP clock mode
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// V2.2 - November 2021
+//  - Updated code to work with MIDI library version 5.0.2
+//  - Fixed bug in perctrig led output.
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// V2.3 - November 2021
+// Author: Alberto Navarro (albertonafu@gmail.com) 
+//  - Code check and versions unification
 // -----------------------------------------------------------------------------
 
 #include "firmware.h"
@@ -61,7 +71,15 @@ RetrigCycle Retrig[6];
 Bounce Bouncer = Bounce(); // will be configured in setup()
 unsigned long BouncerLastTime = 0;
 
+//Use this code for old MIDI library ( v.4.3.1)
+/*
 struct MIDISettings : public midi::DefaultSettings {
+  static const bool UseRunningStatus = false;
+  static const bool Use1ByteParsing = false;
+};
+*/
+
+struct MIDISettings : public midi::DefaultSerialSettings {
   static const bool UseRunningStatus = false;
   static const bool Use1ByteParsing = false;
 };
@@ -106,7 +124,7 @@ void setup()
   }
 
   // Init triggers gates
-  Gates[0].pinLED = PITCHCV + 18;
+  Gates[0].pinLED = PITCHCV + 128;
   Gates[1].pinLED = VELOC + 128;
   Gates[2].pinLED = MODUL + 128;
   Gates[3].pinLED = BEND + 128;

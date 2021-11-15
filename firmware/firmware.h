@@ -116,4 +116,3 @@ void SetupTimer(unsigned int compTimer1);
 #endif
 
 #endif // __FIRMWARE_H__
-
