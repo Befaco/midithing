@@ -1,14 +1,19 @@
-# MIDI Thing v2.1
+# MIDI Thing v2.2
 Firmware for the [Befaco](http://befaco.org) Eurorack MIDI module (MIDI Thing).
 
 ## Requirements
-You need Arduino >= 1.6.3. Recommended 1.8.5
+You need Arduino >= 1.6.3. 
 
 Additionally you will need the following libraries installed (see the [Arduino Guide](https://www.arduino.cc/en/Guide/Libraries) on how to do this):
 
-* [MIDI](https://github.com/FortySevenEffects/arduino_midi_library/releases/tag/4.3.1) If you use Library manager install version 4.3.1. 
+* [MIDI](https://github.com/FortySevenEffects/arduino_midi_library/releases/tag/5.0.2) 
 * [Bounce2](https://github.com/thomasfredericks/Bounce2) 
 * [mcp4728](https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/neuroelec/mcp4728_library_v1.3_for_Arduino_1.0.zip)
+
+## bug fix
+
+- Fixed Retrigger issues
+- Fixed Perc trigger note error.
 
 
 ## Uploading the firmware
