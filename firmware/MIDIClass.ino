@@ -481,6 +481,7 @@ int ReadMIDIeeprom(void)
   SetPpqnClock(lGS.PpqnCLOCK);
   SetClockMode(lGS.ClockMode);
   SetSTSPMode(lGS.StSpMode);
+  SetRoundRobin(lGS.RoundRobin);
   return (GS.NumVoices);
 }
 
@@ -661,4 +662,8 @@ void SetVoiceMode(int mode)
   Serial.print("New Mode: ");
   Serial.println(mode);
 #endif
+}
+
+void SetRoundRobin(bool roundRobin) {
+  GS.RoundRobin = roundRobin;
 }

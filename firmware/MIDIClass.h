@@ -482,6 +482,7 @@ class VoiceSelector {
       return -1; // something went wrong
     }
 
+    int nextChannel = 0; // stores which channel is next for round-robin allocation
     int getPolyTargetChannel(byte channel, byte pitch, byte velocity)
     {
       //look for a mininmum pitch
@@ -502,10 +503,27 @@ class VoiceSelector {
       }
 
       // then look for an empty channel
-      for (int i = 0; i < GS.NumVoices; i++) {
-        if (Voice[i].midiChannel == channel && !Voice[i].notes.getCount()) {
-          return i;
+      if (GS.RoundRobin) {
+        for (int i = nextChannel; i < GS.NumVoices; i++) {
+          if (Voice[i].midiChannel == channel && !Voice[i].notes.getCount()) {
+            nextChannel = i + 1;
+            if (nextChannel >= GS.NumVoices) nextChannel = 0;
+            return i;
+          }
         }
+        for (int i = 0; i < nextChannel; i++) {
+          if (Voice[i].midiChannel == channel && !Voice[i].notes.getCount()) {
+            nextChannel = i + 1;
+            if (nextChannel >= GS.NumVoices) nextChannel = 0;
+            return i;
+          }
+        }
+      } else {
+        for (int i = 0; i < GS.NumVoices; i++) {
+          if (Voice[i].midiChannel == channel && !Voice[i].notes.getCount()) {
+            return i;
+          }
+        }        
       }
 
       if (!velocity) {
