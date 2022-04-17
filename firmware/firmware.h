@@ -39,6 +39,7 @@
 #define CALMODE 1
 #define CHANGEMODE 2
 #define CHANGEOPTIONS 3
+#define CHANGEOPTIONS_EX 4
 
 //Percussion midi channel
 #define PERCCHANNEL 10
@@ -82,6 +83,7 @@ struct GENERALSETTINGS {
   int ClockMode        = NORMAL_CLOCK;  //Clock mode
   int PpqnCLOCK        = 24;            //Clock resolution
   int StSpMode         = NORMAL_STSP;   //Start/stop mode
+  bool RoundRobin      = false;         //RoundRobin mode
 };
 
 

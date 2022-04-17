@@ -151,6 +151,12 @@ byte MenuModeHandle(byte channel, byte pitch, byte velocity)
         ResetToCurrentVoiceMode();
       }
       break;
+    case CHANGEOPTIONS_EX:
+      lv_return = selectOptions2(pitch);
+      if (!calProcEnabled && lv_return == 1) {
+        ResetToCurrentVoiceMode();
+      }
+      break;
     default:
       lv_return = 0;
       break;
@@ -232,6 +238,24 @@ byte selectOptions(byte pitch)
     case 11: //B
       //Set Process calibration flag if setted
       enterCalProc( );
+      return 1;
+      break;
+    default:
+      return 0;
+      break;
+  }
+}
+byte selectOptions2(byte pitch)
+{
+  byte lv_pitch = pitch;
+  lv_pitch = getElementalPitch(pitch);
+  switch (lv_pitch) {
+    case 0: // C
+      SetRoundRobin(false);
+      return 1;
+      break;
+    case 2: // D
+      SetRoundRobin(true);
       return 1;
       break;
     default:
@@ -410,6 +434,8 @@ byte checkMenuMode( byte channel )
     return CHANGEMODE;
   } else if (channel == 2) {
     return CHANGEOPTIONS;
+  } else if (channel == 3) {
+    return CHANGEOPTIONS_EX;
   }
 }
 

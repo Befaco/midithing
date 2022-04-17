@@ -164,6 +164,7 @@ void setup()
     SetClockMode(NORMAL_CLOCK);
     SetSTSPMode(NORMAL_STSP);
     SetPpqnClock(24);
+    SetRoundRobin(false);
     WriteMIDIeeprom();
   }
 
