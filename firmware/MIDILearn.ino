@@ -138,6 +138,12 @@ byte MenuModeHandle(byte channel, byte pitch, byte velocity)
   switch (checkMenuMode(channel)) {
     case CALMODE:
       // Channels 1-4 for DAC calibration 0-3
+      if (channel < 1 || channel > GS.NumVoices) {
+        // DACConv holds one entry per voice: any other channel would index
+        // past the end of the array and Processnote() writes through it.
+        lv_return = 0;
+        break;
+      }
       lv_return = (DACConv[channel - 1].Processnote(channel, pitch, velocity));
       break;
     case CHANGEMODE:
