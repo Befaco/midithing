@@ -566,7 +566,9 @@ void ResetToCurrentVoiceMode(void)
 // Set default MIDI properties manually
 void SetVoiceMode(int mode)
 {
-  if (GS.VoiceMode >= MIDIMODE_LAST) return;
+  // Was testing GS.VoiceMode, the current mode, instead of the requested one:
+  // a single garbage value in GS would have turned this into a no-op for good.
+  if (mode <= MIDIMODE_INVALID || mode >= MIDIMODE_LAST) return;
 
   GS.VoiceMode = mode;
   // Reset pointers
