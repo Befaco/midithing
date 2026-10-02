@@ -215,6 +215,11 @@ void HandleStop(void)
   MIDIRun = 0;
   countCLOCK = 0;
   ResetBlink( );
+  // A paused sequencer never sends the Note Offs for the notes it was playing:
+  // without this, every pause leaks one stuck note into the voice note list,
+  // and at the eighth processNoteOn() bails out and that voice goes silent
+  // for good.
+  AllNotesOff();
 #ifdef PRINTDEBUG
   Serial.println("MIDI Stop");
 #endif

@@ -108,6 +108,7 @@ void HandleClock(void);
 void BlinkOK(void);
 void BlinkKO(void);
 void ResetBlink(void);
+void AllNotesOff(void);
 static void LightShow(unsigned long periodon, unsigned long periodoff, int times);
 static void PlayLightShowPin(unsigned long periodon, unsigned long periodoff, int times, int newpin = -1);
 // Timer functions
