@@ -418,6 +418,9 @@ void AllNotesOff(void)
     Voice[i].playNoteOff();
     Voice[i].notes.clear();
   }
+  // Without this, playing_ and pool_ keep holding notes that no voice is
+  // playing any more: in POLYLAST that mismatch leads straight to Voice[255].
+  Selector.clear();
 }
 
 // Read MIDI properties from eeprom
