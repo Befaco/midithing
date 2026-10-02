@@ -436,7 +436,13 @@ void enterCalProc(void)
   }
 
   calProcEnabled = true;
-  InitLearnMode();
+  // No InitLearnMode() here. EnterCalMode() has already backed the learned
+  // channels up into midiChannel_current - and has already replaced
+  // midiChannel with the QUADMIDI defaults via SetVoiceMode(). Taking the
+  // backup a second time at this point captures those defaults instead, so
+  // RecoverVoice() faithfully restores 1-4 on the way out and the learn is
+  // gone. The loop below is what calibration actually needs: channels 1-4
+  // mapped to outputs 1-4, with minInput at 0 so val == pitch.
   for (int i = 0; i < GS.NumVoices; i++) {
     Voice[i].SetLearn((i + 1), 0);
   }
