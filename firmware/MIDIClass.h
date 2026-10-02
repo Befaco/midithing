@@ -123,7 +123,7 @@ class NoteEventInfo {
           // Remove note from the list
           for (int i = 0; i < count_; i++) {
             if (events_[i].pitch == pitch) {
-              while (i < count_) {
+              while (i < count_ - 1) { // was "i < count_": read events_[MAXNOTES]
                 events_[i] = events_[i + 1];
                 i++;
               }
