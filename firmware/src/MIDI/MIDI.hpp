@@ -982,6 +982,23 @@ bool MidiInterface<Transport, Settings, Platform>::parse()
                     }
 
                 default:
+                    // A status byte that is neither Real Time nor EOX cannot
+                    // appear inside a SysEx: it means the SysEx was truncated
+                    // (its F7 never arrived). Without this branch the byte is
+                    // stored into sysexArray as if it were data, and from then
+                    // on every channel message is swallowed forever - while
+                    // Real Time keeps flowing through.
+                    // The message in flight is lost, then parsing resyncs.
+                    if ((mPendingMessage[0] == SystemExclusiveStart)
+                    ||  (mPendingMessage[0] == SystemExclusiveEnd))
+                    {
+                        mLastError |= 1UL << ErrorParse;
+                        if (mErrorCallback)
+                            mErrorCallback(mLastError);
+
+                        resetInput();
+                        return false;
+                    }
                     break; // LCOV_EXCL_LINE - Coverage blind spot
             }
         }

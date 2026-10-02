@@ -9,7 +9,7 @@ Additionally you will need the following libraries installed (see the [Arduino G
 * [Bounce2](https://github.com/thomasfredericks/Bounce2) 
 * [mcp4728](https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/neuroelec/mcp4728_library_v1.3_for_Arduino_1.0.zip)
 
-The [MIDI library](https://github.com/FortySevenEffects/arduino_midi_library) (5.0.2) is bundled in `firmware/src/MIDI`. No need to install it.
+The [MIDI library](https://github.com/FortySevenEffects/arduino_midi_library) (5.0.2) is bundled in `firmware/src/MIDI`, with a fix for a parser lockup that is not in any upstream release. No need to install it.
 
 ## bug fix
 
