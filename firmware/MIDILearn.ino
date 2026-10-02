@@ -411,6 +411,8 @@ byte checkMenuMode( byte channel )
   } else if (channel == 2) {
     return CHANGEOPTIONS;
   }
+  return 0; // no menu on this channel; without this the function fell off the
+            // end and callers acted on whatever happened to be in the register
 }
 
 //Warning lightshow when entering in calc procedure
