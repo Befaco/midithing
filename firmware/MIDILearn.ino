@@ -96,16 +96,32 @@ void DoCalCycle(void)
 /////////////////////////////////////////////////////////////////////////////////////////////
 void EndCalMode(bool cancel)
 {
+  // Not idempotent otherwise, and this does get called more than once: the
+  // button, MenuModeHandle() and the 55 second timeout can all reach it. The
+  // first call restores the learned channels and ReSetCurrentLearn() then
+  // clears the backups; a second call would run RecoverVoice() again, which
+  // re-applies the voice mode - resetting the channels to the mode defaults -
+  // and can no longer restore anything, silently losing the learn.
+  if (LearnMode == NORMALMODE) {
+    return;
+  }
+
+
   BlinkSaving();
   // Set normal mode
   LearnMode = NORMALMODE;
-  if (cancel) {
-    //Set last active voice
-    RecoverVoice();
-  } else {
-    //Reset Process calibration flag if setted
-    exitCalProc();
+  // The learned channels have to come back on the way out whichever path got
+  // us here. EnterCalMode() replaced them with the mode defaults, and the
+  // restore used to hang off calProcEnabled inside exitCalProc(), so the 55
+  // second timeout taken before the procedure was ever started wrote those
+  // defaults into EEPROM and the learn was gone.
+  // RecoverVoice() must run exactly once: it re-applies the voice mode first
+  // and only then restores the channels, so calling it twice would leave the
+  // defaults in place.
+  if (!cancel) {
+    calProcEnabled = false; // end of the calibration procedure, if it was running
   }
+  RecoverVoice();
   // Store in EEPROM
   WriteMIDIeeprom();
   // Turn off LED blink

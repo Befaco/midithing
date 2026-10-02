@@ -376,7 +376,13 @@ void MIDICV::RecoveryLearn() {
   SetLearn(midiChannel_bck, minInput_bck);
 }
 //Recover active learn
-void MIDICV::ResetLearn() {        
+void MIDICV::ResetLearn() {
+  // ReSetCurrentLearn() zeroes midiChannel_current once a recovery has been
+  // consumed. Restoring that blindly would park the voice on channel 0, which
+  // no incoming message can match, leaving the output permanently mute.
+  if (midiChannel_current == 0) {
+    return;
+  }
   SetLearn(midiChannel_current, minInput_current);
 }
 
