@@ -136,6 +136,23 @@ void HandleControlChange(byte channel, byte number, byte value)
   if (LearnMode == ENTERLEARN) {
     return;  // Do not process while in Learn Mode
   }
+
+  // All Notes Off must not go through getTargetChannel(): that lookup passes
+  // pitch = 0, so the minInput filter drops it, and in poly mode it returns -1
+  // as soon as every voice is busy - which is exactly when a panic is needed.
+  if (number == 123) {
+    for (int i = 0; i < GS.NumVoices; i++) {
+      if (Voice[i].midiChannel == channel) {
+        AllNotesOff(); // clears every voice, as the original code did
+        break;
+      }
+    }
+#ifdef PRINTDEBUG
+    Serial.println("All Notes Off");
+#endif
+    return;
+  }
+
   // Check if received channel is any active MIDI
   MIDIactive = Selector.getTargetChannel(channel);
   if (MIDIactive == -1) {
@@ -146,14 +163,6 @@ void HandleControlChange(byte channel, byte number, byte value)
     case 1:
       Voice[MIDIactive].processMod(value);
       break; // Handle only CC #1 = Modulation
-    case 123:
-      for (int i = 0; i < GS.NumVoices; i++) {
-        Voice[i].playNoteOff(); // All notes off received
-        Voice[i].notes.clear(); // 0 notes on
-      }
-#ifdef PRINTDEBUG
-      Serial.println("All Notes Off");
-#endif
     default:
       return;
   }
