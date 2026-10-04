@@ -1,6 +1,8 @@
 # MIDI Thing v2.2
 Firmware for the [Befaco](http://befaco.org) Eurorack MIDI module (MIDI Thing).
 
+**Community branch:** this branch collects community fixes and features on top of the official firmware (`master`). See [CHANGELOG.md](CHANGELOG.md) for what is fixed, changed and new.
+
 ## Requirements
 You need Arduino >= 1.6.3. 
 
