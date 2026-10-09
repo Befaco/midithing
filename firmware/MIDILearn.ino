@@ -344,6 +344,11 @@ byte selectVoiceMode(byte pitch)
     if (IsPolyMode(lv_newVoiceMode)) {
       PolyModeReplicateVoices(lv_newVoiceMode);
     }
+    // EndCalMode() -> RecoverVoice() restores GS.CurrentVoiceMode and the
+    // midiChannel_current backups taken on entering the menu. Make the new
+    // mode and its channels the ones it restores, or the change is undone.
+    SetCurrentVoiceMode();
+    InitLearnMode();
   }
   return (lv_return);
 
