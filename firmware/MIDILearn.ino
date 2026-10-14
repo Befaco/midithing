@@ -96,16 +96,32 @@ void DoCalCycle(void)
 /////////////////////////////////////////////////////////////////////////////////////////////
 void EndCalMode(bool cancel)
 {
+  // Not idempotent otherwise, and this does get called more than once: the
+  // button, MenuModeHandle() and the 55 second timeout can all reach it. The
+  // first call restores the learned channels and ReSetCurrentLearn() then
+  // clears the backups; a second call would run RecoverVoice() again, which
+  // re-applies the voice mode - resetting the channels to the mode defaults -
+  // and can no longer restore anything, silently losing the learn.
+  if (LearnMode == NORMALMODE) {
+    return;
+  }
+
+
   BlinkSaving();
   // Set normal mode
   LearnMode = NORMALMODE;
-  if (cancel) {
-    //Set last active voice
-    RecoverVoice();
-  } else {
-    //Reset Process calibration flag if setted
-    exitCalProc();
+  // The learned channels have to come back on the way out whichever path got
+  // us here. EnterCalMode() replaced them with the mode defaults, and the
+  // restore used to hang off calProcEnabled inside exitCalProc(), so the 55
+  // second timeout taken before the procedure was ever started wrote those
+  // defaults into EEPROM and the learn was gone.
+  // RecoverVoice() must run exactly once: it re-applies the voice mode first
+  // and only then restores the channels, so calling it twice would leave the
+  // defaults in place.
+  if (!cancel) {
+    calProcEnabled = false; // end of the calibration procedure, if it was running
   }
+  RecoverVoice();
   // Store in EEPROM
   WriteMIDIeeprom();
   // Turn off LED blink
@@ -138,6 +154,12 @@ byte MenuModeHandle(byte channel, byte pitch, byte velocity)
   switch (checkMenuMode(channel)) {
     case CALMODE:
       // Channels 1-4 for DAC calibration 0-3
+      if (channel < 1 || channel > GS.NumVoices) {
+        // DACConv holds one entry per voice: any other channel would index
+        // past the end of the array and Processnote() writes through it.
+        lv_return = 0;
+        break;
+      }
       lv_return = (DACConv[channel - 1].Processnote(channel, pitch, velocity));
       break;
     case CHANGEMODE:
@@ -322,6 +344,11 @@ byte selectVoiceMode(byte pitch)
     if (IsPolyMode(lv_newVoiceMode)) {
       PolyModeReplicateVoices(lv_newVoiceMode);
     }
+    // EndCalMode() -> RecoverVoice() restores GS.CurrentVoiceMode and the
+    // midiChannel_current backups taken on entering the menu. Make the new
+    // mode and its channels the ones it restores, or the change is undone.
+    SetCurrentVoiceMode();
+    InitLearnMode();
   }
   return (lv_return);
 
@@ -411,6 +438,8 @@ byte checkMenuMode( byte channel )
   } else if (channel == 2) {
     return CHANGEOPTIONS;
   }
+  return 0; // no menu on this channel; without this the function fell off the
+            // end and callers acted on whatever happened to be in the register
 }
 
 //Warning lightshow when entering in calc procedure
@@ -428,7 +457,13 @@ void enterCalProc(void)
   }
 
   calProcEnabled = true;
-  InitLearnMode();
+  // No InitLearnMode() here. EnterCalMode() has already backed the learned
+  // channels up into midiChannel_current - and has already replaced
+  // midiChannel with the QUADMIDI defaults via SetVoiceMode(). Taking the
+  // backup a second time at this point captures those defaults instead, so
+  // RecoverVoice() faithfully restores 1-4 on the way out and the learn is
+  // gone. The loop below is what calibration actually needs: channels 1-4
+  // mapped to outputs 1-4, with minInput at 0 so val == pitch.
   for (int i = 0; i < GS.NumVoices; i++) {
     Voice[i].SetLearn((i + 1), 0);
   }

@@ -123,7 +123,7 @@ class NoteEventInfo {
           // Remove note from the list
           for (int i = 0; i < count_; i++) {
             if (events_[i].pitch == pitch) {
-              while (i < count_) {
+              while (i < count_ - 1) { // was "i < count_": read events_[MAXNOTES]
                 events_[i] = events_[i + 1];
                 i++;
               }
@@ -452,7 +452,8 @@ class VoiceSelector {
       // shift playing_ down
       // return the channel
       byte oldestPitch;
-      byte oldestChannel = -1;
+      int oldestChannel = -1; // byte is unsigned: -1 became 255 and the
+                              // ">= 0" test below was always true
 
       if (!playing_.getEvent(0, &oldestPitch)) {
         // something went wrong, but let's add it to the pool

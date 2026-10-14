@@ -8,7 +8,7 @@
 
 #include <Bounce2.h> // Button debouncer
 #include <EEPROM.h>
-#include <MIDI.h> // MIDI library
+#include "src/MIDI/MIDI.h" // MIDI library (local copy, carries the SysEx resync fix)
 #include <Wire.h> //  I2C Comm
 #include <mcp4728.h> // MCP4728 library
 #include <avr/eeprom.h>
@@ -108,6 +108,7 @@ void HandleClock(void);
 void BlinkOK(void);
 void BlinkKO(void);
 void ResetBlink(void);
+void AllNotesOff(void);
 static void LightShow(unsigned long periodon, unsigned long periodoff, int times);
 static void PlayLightShowPin(unsigned long periodon, unsigned long periodoff, int times, int newpin = -1);
 // Timer functions

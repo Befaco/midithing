@@ -376,7 +376,13 @@ void MIDICV::RecoveryLearn() {
   SetLearn(midiChannel_bck, minInput_bck);
 }
 //Recover active learn
-void MIDICV::ResetLearn() {        
+void MIDICV::ResetLearn() {
+  // ReSetCurrentLearn() zeroes midiChannel_current once a recovery has been
+  // consumed. Restoring that blindly would park the voice on channel 0, which
+  // no incoming message can match, leaving the output permanently mute.
+  if (midiChannel_current == 0) {
+    return;
+  }
   SetLearn(midiChannel_current, minInput_current);
 }
 
@@ -418,6 +424,9 @@ void AllNotesOff(void)
     Voice[i].playNoteOff();
     Voice[i].notes.clear();
   }
+  // Without this, playing_ and pool_ keep holding notes that no voice is
+  // playing any more: in POLYLAST that mismatch leads straight to Voice[255].
+  Selector.clear();
 }
 
 // Read MIDI properties from eeprom
@@ -445,6 +454,11 @@ int ReadMIDIeeprom(void)
     return (-1);
   }
 
+  // Lay the voices out for the stored mode BEFORE restoring anything: this is
+  // what assigns the DAC pointers and the gate pins, and they have to come from
+  // the running binary rather than from EEPROM - see the note in the loop.
+  SetVoiceMode(lGS.VoiceMode);
+
   for (i = 0; i < 4; i++) {
     eeprom_read_block((void *)&tempConv, (void *)offset, sizeof(tempConv));
     offset = offset + sizeof(tempConv);
@@ -460,7 +474,19 @@ int ReadMIDIeeprom(void)
     }
     eeprom_read_block((void *)&tempMIDI, (void *)offset, sizeof(tempMIDI));
     offset = offset + sizeof(tempMIDI);
-    memcpy(&Voice[i], &tempMIDI, sizeof(Voice[i]));
+    // Never memcpy the whole MIDICV back: it holds four raw RAM pointers plus
+    // the live note list. Those pointers are addresses belonging to whatever
+    // binary wrote this EEPROM, so any rebuild that moves DACConv leaves them
+    // aimed at unrelated memory - the voice then reads minInput out of garbage
+    // and silently stops matching its own MIDI channel. Restore only what is
+    // genuinely persistent and keep the pointers and gatePin SetVoiceMode()
+    // just assigned.
+    Voice[i].midiChannel         = tempMIDI.midiChannel;
+    Voice[i].midiChannel_current = tempMIDI.midiChannel_current;
+    Voice[i].minInput_current    = tempMIDI.minInput_current;
+    Voice[i].midiChannel_bck     = tempMIDI.midiChannel_bck;
+    Voice[i].minInput_bck        = tempMIDI.minInput_bck;
+    Voice[i].notes.clear(); // stale note state must not survive a power cycle
     
     /*   #ifdef PRINTDEBUG
        Serial.print("DACConv addr: ");
@@ -563,7 +589,9 @@ void ResetToCurrentVoiceMode(void)
 // Set default MIDI properties manually
 void SetVoiceMode(int mode)
 {
-  if (GS.VoiceMode >= MIDIMODE_LAST) return;
+  // Was testing GS.VoiceMode, the current mode, instead of the requested one:
+  // a single garbage value in GS would have turned this into a no-op for good.
+  if (mode <= MIDIMODE_INVALID || mode >= MIDIMODE_LAST) return;
 
   GS.VoiceMode = mode;
   // Reset pointers

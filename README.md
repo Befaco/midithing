@@ -6,9 +6,10 @@ You need Arduino >= 1.6.3.
 
 Additionally you will need the following libraries installed (see the [Arduino Guide](https://www.arduino.cc/en/Guide/Libraries) on how to do this):
 
-* [MIDI](https://github.com/FortySevenEffects/arduino_midi_library/releases/tag/5.0.2) 
 * [Bounce2](https://github.com/thomasfredericks/Bounce2) 
 * [mcp4728](https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/neuroelec/mcp4728_library_v1.3_for_Arduino_1.0.zip)
+
+The [MIDI library](https://github.com/FortySevenEffects/arduino_midi_library) (5.0.2) is bundled in `firmware/src/MIDI`, with a fix for a parser lockup that is not in any upstream release. No need to install it.
 
 ## bug fix
 
@@ -29,7 +30,7 @@ Go to the official Arduino website https://www.arduino.cc/en/Main/Software and d
 Go to https://github.com/Befaco/midithing and press "clone or download" to download the repository to your computer. Extract the zip file and copy "firmware" folder to your sketchbook folder. 
 
 4. Install the libraries
-Download the libraries from Library manager (Bounceand MIDI) and install them following the instructions from this link https://www.arduino.cc/en/Guide/Libraries
+Download the libraries from Library manager (Bounce2) and install them following the instructions from this link https://www.arduino.cc/en/Guide/Libraries
 Keep in mind MCP library must be installed from the following link. Do not use library manager one:
  https://code.google.com/archive/p/neuroelec/downloads 
  
